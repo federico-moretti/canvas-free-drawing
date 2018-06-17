@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <style>
+    canvas {
+      border: 1px solid black;
+    }
+  </style>
+</head>
+
+<body>
+  <p>Canvas:</p>
+  <canvas id="scd"></canvas>
+  <button id="clear">Clear canvas</button>
+  <button id="save">Save canvas</button>
+</body>
+<script src="simple-canvas-drawing.js"></script>
+<script>
+  const scd = new SimpleCanvasDrawing('scd', { width: 500, height: 500 });
+  document.getElementById('clear').addEventListener('click', () => scd.clear());
+  document.getElementById('save').addEventListener('click', () => console.log(JSON.stringify(scd.save())));
+</script>
+
+</html>
