@@ -115,30 +115,28 @@ class SimpleCanvasDrawing {
   // 12.         If the color of the node to the south of n is target-color, add that node to Q.
   // 13. Continue looping until Q is exhausted.
   // 14. Return.
-  fill(x, y, targetColor, newColor) {
-    console.log('fill started');
-    const rgbaTargetColor = this.rgbaFromArray(newColor);
-    this.imageData = this.context.getImageData(0, 0, this.width, this.height).data;
-    const nodeColor = this.getNodeColor(x, y);
-    console.log('data', this.imageData);
-    console.log('rgba', rgbaTargetColor);
-    if (this.compareNodeColor(targetColor, newColor)) return;
-    if (!this.compareNodeColor(nodeColor, targetColor)) return;
-    console.log('after checks');
-    const colored = {};
+  fill(x, y, targetColor, newColor, precision) {
+    const start = Date.now();
+    precision = precision || false;
+    const imageData = this.context.getImageData(0, 0, this.width, this.height);
+    const data = imageData.data;
+    const nodeColor = this.getNodeColor(x, y, data);
+    if (this.isNodeColorEqual(targetColor, newColor, precision)) return;
+    if (!this.isNodeColorEqual(nodeColor, targetColor, precision)) return;
     const queue = [];
     queue.push([x, y]);
 
     while (queue.length) {
+      if (queue.length > this.width * this.height) break;
       const n = queue.pop();
       let w = n;
       let e = n;
 
-      while (this.compareNodeColor(this.getNodeColor(w[0] - 1, w[1]), targetColor)) {
+      while (this.isNodeColorEqual(this.getNodeColor(w[0] - 1, w[1], data), targetColor, precision)) {
         w = [w[0] - 1, w[1]];
       }
 
-      while (this.compareNodeColor(this.getNodeColor(e[0] + 1, e[1]), targetColor)) {
+      while (this.isNodeColorEqual(this.getNodeColor(e[0] + 1, e[1], data), targetColor, precision)) {
         e = [e[0] + 1, e[1]];
       }
 
@@ -146,28 +144,21 @@ class SimpleCanvasDrawing {
       const lastNode = e[0];
 
       for (let i = firstNode; i <= lastNode; i++) {
-        this.context.fillStyle = rgbaTargetColor;
-        this.context.fillRect(i, w[1], 1, 1);
-        colored[i.toString() + w[1].toString()] = true;
+        this.setNodeColor(i, w[1], newColor, data);
 
-        const n = [i, w[1] + 1];
-        if (this.compareNodeColor(this.getNodeColor(n[0], n[1]), targetColor)) {
-          if (!this.isAlreadyColored(n[0], n[1], colored)) {
-            queue.push(n);
-            // colored.push([i, w[1] + 1]);
-          }
+        if (this.isNodeColorEqual(this.getNodeColor(i, w[1] + 1, data), targetColor, precision)) {
+          queue.push([i, w[1] + 1]);
         }
 
-        const s = [i, w[1] - 1];
-        if (this.compareNodeColor(this.getNodeColor(s[0], s[1]), targetColor)) {
-          if (!this.isAlreadyColored(s[0], s[1], colored)) {
-            queue.push(s);
-            // colored.push([i, w[1] - 1]);
-          }
+        if (this.isNodeColorEqual(this.getNodeColor(i, w[1] - 1, data), targetColor, precision)) {
+          queue.push([i, w[1] - 1]);
         }
       }
     }
-    console.log('fill ended');
+
+    this.context.putImageData(imageData, 0, 0);
+
+    console.log(`execution flood-fill: ${Date.now() - start} ms`);
   }
 
   isAlreadyColored(x, y, colored) {
@@ -175,17 +166,35 @@ class SimpleCanvasDrawing {
     return false;
   }
 
-  compareNodeColor(color1, color2) {
-    return color1[0] === color2[0] && color1[1] === color2[1] && color1[2] === color2[3] && color1[3] === color2[3];
+  // i = color 1; j = color 2; p = precision
+  isNodeColorEqual(i, j, p) {
+    if (p) {
+      return (
+        // prettier-ignore
+        (i[0] + p > j[0] && i[0] - p < j[0]) &&
+        (i[1] + p > j[1] && i[1] - p < j[1]) &&
+        (i[2] + p > j[2] && i[2] - p < j[2]) &&
+        (i[3] + p > j[3] && i[3] - p < j[3])
+      );
+    }
+    return i[0] === j[0] && i[1] === j[1] && i[2] === j[3] && i[3] === j[3];
   }
 
   rgbaFromArray(a) {
     return `rgba(${a[0]},${a[1]},${a[2]},${a[3]})`;
   }
 
-  getNodeColor(x, y) {
+  getNodeColor(x, y, data) {
     const i = (x + y * this.width) * 4;
-    return [this.imageData[i], this.imageData[i + 1], this.imageData[i + 2], this.imageData[i + 3]];
+    return [data[i], data[i + 1], data[i + 2], data[i + 3]];
+  }
+
+  setNodeColor(x, y, color, data) {
+    const i = (x + y * this.width) * 4;
+    data[i] = color[0];
+    data[i + 1] = color[1];
+    data[i + 2] = color[2];
+    data[i + 3] = color[3];
   }
 
   // not used anymore
@@ -228,12 +237,15 @@ class SimpleCanvasDrawing {
   }
 
   save() {
-    return this.positions;
+    return this.canvas.toDataURL();
   }
 
   restore(backup) {
-    this.clear();
-    this.positions = JSON.parse(backup);
-    this.redraw();
+    console.log('backup', backup);
+    const image = new Image();
+    image.onload = () => {
+      this.context.drawImage(image, 0, 0);
+    };
+    image.src = backup;
   }
 }

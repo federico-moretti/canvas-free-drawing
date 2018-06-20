@@ -33,7 +33,7 @@
   const textarea = document.getElementById('backup');
   document.getElementById('clear').addEventListener('click', () => scd.clear());
   document.getElementById('save').addEventListener('click', () => {
-    textarea.value = JSON.stringify(scd.save());
+    textarea.value = scd.save();
   });
   document.getElementById('restore').addEventListener('click', () => {
     scd.restore(textarea.value);
