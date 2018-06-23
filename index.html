@@ -10,6 +10,26 @@
     canvas {
       border: 1px solid black;
     }
+
+    .color {
+      color: white;
+    }
+
+    #red {
+      background-color: red;
+    }
+
+    #green {
+      background-color: green;
+    }
+
+    #blue {
+      background-color: blue;
+    }
+
+    #black {
+      background-color: black;
+    }
   </style>
 </head>
 
@@ -22,6 +42,12 @@
   <button id="save">Save canvas</button>
   <button id="restore">Restore canvas</button>
   <button id="bucket">Bucket</button>
+  <input id="tolerance" type="text">
+  <br>
+  <button id="red" class="color">Red</button>
+  <button id="green" class="color">Green</button>
+  <button id="blue" class="color">Blue</button>
+  <button id="black" class="color">Black</button>
   <br>
   <br>
   <textarea name="backup" id="backup" cols="60" rows="10"></textarea>
@@ -38,7 +64,14 @@
   document.getElementById('restore').addEventListener('click', () => {
     scd.restore(textarea.value);
   });
-  document.getElementById('bucket').addEventListener('click', () => scd.selectBucket());
+  document.getElementById('bucket').addEventListener('click', () => {
+    scd.tolerance = document.getElementById('tolerance').value;
+    scd.selectBucket();
+  });
+  document.getElementById('red').addEventListener('click', () => scd.setStrokeColor([255, 0, 0, 255]));
+  document.getElementById('green').addEventListener('click', () => scd.setStrokeColor([0, 255, 0, 255]));
+  document.getElementById('blue').addEventListener('click', () => scd.setStrokeColor([0, 0, 255, 255]));
+  document.getElementById('black').addEventListener('click', () => scd.setStrokeColor([0, 0, 0, 255]));
 </script>
 
 </html>

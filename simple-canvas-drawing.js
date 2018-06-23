@@ -11,7 +11,8 @@ class SimpleCanvasDrawing {
 
     this.sectionSize = 20;
     this.lineWidth = 2;
-    this.strokeColor = 'black';
+    this.strokeColor = [0, 0, 0, 255];
+    this.tolerance = false;
 
     this.xArray = [];
     this.yArray = [];
@@ -38,7 +39,7 @@ class SimpleCanvasDrawing {
     const x = event.pageX - this.canvas.offsetLeft;
     const y = event.pageY - this.canvas.offsetTop;
     if (this.selectedBucket) {
-      this.fill(x, y, [255, 255, 255, 255], [255, 0, 0, 255]);
+      this.fill(x, y, this.strokeColor, this.tolerance);
       this.selectedBucket = false;
       return;
     }
@@ -75,7 +76,7 @@ class SimpleCanvasDrawing {
   }
 
   redraw(all) {
-    this.context.strokeStyle = this.strokeColor;
+    this.context.strokeStyle = this.rgbaFromArray(this.strokeColor);
     this.context.lineJoin = 'round';
     this.context.lineWidth = this.lineWidth;
 
@@ -100,29 +101,17 @@ class SimpleCanvasDrawing {
     });
   }
 
-  //  Flood-fill (node, target-color, replacement-color):
-  //  1. If target-color is equal to replacement-color, return.
-  //  2. If color of node is not equal to target-color, return.
-  //  3. Set Q to the empty queue.
-  //  4. Add node to Q.
-  //  5. For each element N of Q:
-  //  6.     Set w and e equal to N.
-  //  7.     Move w to the west until the color of the node to the west of w no longer matches target-color.
-  //  8.     Move e to the east until the color of the node to the east of e no longer matches target-color.
-  //  9.     For each node n between w and e:
-  // 10.         Set the color of n to replacement-color.
-  // 11.         If the color of the node to the north of n is target-color, add that node to Q.
-  // 12.         If the color of the node to the south of n is target-color, add that node to Q.
-  // 13. Continue looping until Q is exhausted.
-  // 14. Return.
-  fill(x, y, targetColor, newColor, precision) {
+  // https://en.wikipedia.org/wiki/Flood_fill
+  fill(x, y, newColor, tolerance) {
+    if (typeof newColor != 'object') throw new Error('New color must be an array like: [255, 255, 255, 255]');
+    console.log('tolerance:', tolerance || 'none');
     const start = Date.now();
-    precision = precision || false;
     const imageData = this.context.getImageData(0, 0, this.width, this.height);
     const data = imageData.data;
     const nodeColor = this.getNodeColor(x, y, data);
-    if (this.isNodeColorEqual(targetColor, newColor, precision)) return;
-    if (!this.isNodeColorEqual(nodeColor, targetColor, precision)) return;
+    const targetColor = this.getNodeColor(x, y, data);
+    if (this.isNodeColorEqual(targetColor, newColor, tolerance)) return;
+    if (!this.isNodeColorEqual(nodeColor, targetColor)) return;
     const queue = [];
     queue.push([x, y]);
 
@@ -132,11 +121,11 @@ class SimpleCanvasDrawing {
       let w = n;
       let e = n;
 
-      while (this.isNodeColorEqual(this.getNodeColor(w[0] - 1, w[1], data), targetColor, precision)) {
+      while (this.isNodeColorEqual(this.getNodeColor(w[0] - 1, w[1], data), targetColor, tolerance)) {
         w = [w[0] - 1, w[1]];
       }
 
-      while (this.isNodeColorEqual(this.getNodeColor(e[0] + 1, e[1], data), targetColor, precision)) {
+      while (this.isNodeColorEqual(this.getNodeColor(e[0] + 1, e[1], data), targetColor, tolerance)) {
         e = [e[0] + 1, e[1]];
       }
 
@@ -146,42 +135,31 @@ class SimpleCanvasDrawing {
       for (let i = firstNode; i <= lastNode; i++) {
         this.setNodeColor(i, w[1], newColor, data);
 
-        if (this.isNodeColorEqual(this.getNodeColor(i, w[1] + 1, data), targetColor, precision)) {
+        if (this.isNodeColorEqual(this.getNodeColor(i, w[1] + 1, data), targetColor, tolerance)) {
           queue.push([i, w[1] + 1]);
         }
 
-        if (this.isNodeColorEqual(this.getNodeColor(i, w[1] - 1, data), targetColor, precision)) {
+        if (this.isNodeColorEqual(this.getNodeColor(i, w[1] - 1, data), targetColor, tolerance)) {
           queue.push([i, w[1] - 1]);
         }
       }
     }
 
     this.context.putImageData(imageData, 0, 0);
-
     console.log(`execution flood-fill: ${Date.now() - start} ms`);
   }
 
-  isAlreadyColored(x, y, colored) {
-    if (colored[x.toString() + y.toString()]) return true;
-    return false;
-  }
-
-  // i = color 1; j = color 2; p = precision
-  isNodeColorEqual(i, j, p) {
-    if (p) {
+  // i = color 1; j = color 2; t = tolerance
+  isNodeColorEqual(i, j, t) {
+    if (t) {
       return (
-        // prettier-ignore
-        (i[0] + p > j[0] && i[0] - p < j[0]) &&
-        (i[1] + p > j[1] && i[1] - p < j[1]) &&
-        (i[2] + p > j[2] && i[2] - p < j[2]) &&
-        (i[3] + p > j[3] && i[3] - p < j[3])
+        Math.abs(i[0] - j[0]) <= t &&
+        Math.abs(i[1] - j[1]) <= t &&
+        Math.abs(i[2] - j[2]) <= t &&
+        Math.abs(i[3] - j[3]) <= t
       );
     }
     return i[0] === j[0] && i[1] === j[1] && i[2] === j[3] && i[3] === j[3];
-  }
-
-  rgbaFromArray(a) {
-    return `rgba(${a[0]},${a[1]},${a[2]},${a[3]})`;
   }
 
   getNodeColor(x, y, data) {
@@ -195,6 +173,10 @@ class SimpleCanvasDrawing {
     data[i + 1] = color[1];
     data[i + 2] = color[2];
     data[i + 3] = color[3];
+  }
+
+  rgbaFromArray(a) {
+    return `rgba(${a[0]},${a[1]},${a[2]},${a[3]})`;
   }
 
   // not used anymore
@@ -220,7 +202,7 @@ class SimpleCanvasDrawing {
   }
 
   setBackground() {
-    this.context.fillStyle = 'white';
+    this.context.fillStyle = this.rgbaFromArray([255, 255, 255, 255]);
     this.context.fillRect(0, 0, this.width, this.height);
   }
 
@@ -241,11 +223,10 @@ class SimpleCanvasDrawing {
   }
 
   restore(backup) {
-    console.log('backup', backup);
     const image = new Image();
+    image.src = backup;
     image.onload = () => {
       this.context.drawImage(image, 0, 0);
     };
-    image.src = backup;
   }
 }
