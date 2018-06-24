@@ -8,7 +8,19 @@
   <title>Document</title>
   <style>
     canvas {
+      display: block;
       border: 1px solid black;
+      margin-bottom: 20px;
+    }
+
+    button {
+      border: 1px solid black;
+      background-color: #ededed;
+      padding: 5px;
+    }
+
+    button.active {
+      background-color: #888;
     }
 
     .color {
@@ -36,13 +48,12 @@
 <body>
   <p>Canvas:</p>
   <canvas id="scd"></canvas>
-  <br>
-  <br>
   <button id="clear">Clear canvas</button>
   <button id="save">Save canvas</button>
   <button id="restore">Restore canvas</button>
   <button id="bucket">Bucket</button>
   <input id="tolerance" type="text">
+  <br>
   <br>
   <button id="red" class="color">Red</button>
   <button id="green" class="color">Green</button>
@@ -51,11 +62,18 @@
   <br>
   <br>
   <textarea name="backup" id="backup" cols="60" rows="10"></textarea>
+  <br>
+  <br>
+  <p id="redraw-count">0</p>
 
 </body>
 <script src="simple-canvas-drawing.js"></script>
 <script>
   const scd = new SimpleCanvasDrawing('scd', { width: 500, height: 500 });
+  const redrawCount = document.getElementById('redraw-count');
+  scd.on('redraw', () => {
+    redrawCount.innerText = parseInt(redrawCount.innerText) + 1;
+  })
   const textarea = document.getElementById('backup');
   document.getElementById('clear').addEventListener('click', () => scd.clear());
   document.getElementById('save').addEventListener('click', () => {
@@ -66,7 +84,12 @@
   });
   document.getElementById('bucket').addEventListener('click', () => {
     scd.tolerance = document.getElementById('tolerance').value;
-    scd.selectBucket();
+    const isActive = scd.toggleBucket();
+    document.getElementById('bucket').classList.add('active');
+    if (isActive) {
+    } else {
+      document.getElementById('bucket').classList.remove('active');
+    }
   });
   document.getElementById('red').addEventListener('click', () => scd.setStrokeColor([255, 0, 0, 255]));
   document.getElementById('green').addEventListener('click', () => scd.setStrokeColor([0, 255, 0, 255]));

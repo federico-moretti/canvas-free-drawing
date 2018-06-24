@@ -4,8 +4,8 @@ class SimpleCanvasDrawing {
     this.elementId = element;
     this.canvas = this.getCanvas(element);
     this.context = this.canvas.getContext('2d', { alpha: false });
-    this.isDrawing = false;
 
+    this.isDrawing = false;
     this.width = width;
     this.height = height;
 
@@ -14,15 +14,15 @@ class SimpleCanvasDrawing {
     this.strokeColor = [0, 0, 0, 255];
     this.tolerance = false;
 
-    this.xArray = [];
-    this.yArray = [];
-    this.movingArray = [];
     this.lastPath = null;
     this.positions = [];
 
     this.leftCanvasDrawing = false; // to check if user left the canvas drawing, on mouseover resume drawing
     this.selectedBucket = false;
+    this.allowedEvents = ['redraw'];
+    this.isCursorHidden = false;
 
+    this.handleCursor();
     this.setDimensions();
     this.setBackground();
     this.addListeners();
@@ -33,6 +33,13 @@ class SimpleCanvasDrawing {
     this.canvas.addEventListener('mousemove', event => this.mouseMove(event));
     this.canvas.addEventListener('mouseup', () => this.mouseUp());
     this.canvas.addEventListener('mouseleave', () => this.mouseLeave());
+    this.canvas.addEventListener('mouseenter', () => this.mouseEnter());
+  }
+
+  on(event, callback) {
+    if (this.allowedEvents.includes(event)) {
+      this.canvas.addEventListener(event, () => callback());
+    }
   }
 
   mouseDown(event) {
@@ -40,7 +47,6 @@ class SimpleCanvasDrawing {
     const y = event.pageY - this.canvas.offsetTop;
     if (this.selectedBucket) {
       this.fill(x, y, this.strokeColor, this.tolerance);
-      this.selectedBucket = false;
       return;
     }
     this.isDrawing = true;
@@ -60,6 +66,8 @@ class SimpleCanvasDrawing {
       this.storeDrawing(x, y, true);
       this.redraw();
     }
+
+    // this.moveCursor(event);
   }
 
   mouseUp() {
@@ -69,6 +77,12 @@ class SimpleCanvasDrawing {
   mouseLeave() {
     if (this.isDrawing) this.leftCanvasDrawing = true;
     this.isDrawing = false;
+    // this.cursor.style.display = 'none';
+  }
+
+  mouseEnter() {
+    console.log('mouse enter');
+    // this.cursor.style.display = 'block';
   }
 
   storeDrawing(x, y, moving) {
@@ -99,12 +113,14 @@ class SimpleCanvasDrawing {
       this.context.closePath();
       this.context.stroke();
     });
+
+    const redrawEvent = new Event('redraw');
+    this.canvas.dispatchEvent(redrawEvent);
   }
 
   // https://en.wikipedia.org/wiki/Flood_fill
   fill(x, y, newColor, tolerance) {
     if (typeof newColor != 'object') throw new Error('New color must be an array like: [255, 255, 255, 255]');
-    console.log('tolerance:', tolerance || 'none');
     const start = Date.now();
     const imageData = this.context.getImageData(0, 0, this.width, this.height);
     const data = imageData.data;
@@ -146,7 +162,10 @@ class SimpleCanvasDrawing {
     }
 
     this.context.putImageData(imageData, 0, 0);
-    console.log(`execution flood-fill: ${Date.now() - start} ms`);
+
+    const redrawEvent = new Event('redraw');
+    this.canvas.dispatchEvent(redrawEvent);
+    console.log(`Execution flood-fill: ${Date.now() - start} ms`);
   }
 
   // i = color 1; j = color 2; t = tolerance
@@ -159,7 +178,7 @@ class SimpleCanvasDrawing {
         Math.abs(i[3] - j[3]) <= t
       );
     }
-    return i[0] === j[0] && i[1] === j[1] && i[2] === j[3] && i[3] === j[3];
+    return i[0] === j[0] && i[1] === j[1] && i[2] === j[2] && i[3] === j[3];
   }
 
   getNodeColor(x, y, data) {
@@ -177,6 +196,10 @@ class SimpleCanvasDrawing {
 
   rgbaFromArray(a) {
     return `rgba(${a[0]},${a[1]},${a[2]},${a[3]})`;
+  }
+
+  rgbFromArray(a) {
+    return `rgb(${a[0]},${a[1]},${a[2]})`;
   }
 
   // not used anymore
@@ -206,8 +229,28 @@ class SimpleCanvasDrawing {
     this.context.fillRect(0, 0, this.width, this.height);
   }
 
-  selectBucket() {
-    this.selectedBucket = true;
+  toggleBucket() {
+    return (this.selectedBucket = !this.selectedBucket);
+  }
+
+  handleCursor() {
+    this.canvas.style.cursor = 'crosshair';
+
+    /*
+    this.canvas.style.cursor = 'none';
+    this.cursor = document.createElement('div');
+    document.querySelector('body').appendChild(this.cursor);
+    this.cursor.style.position = 'absolute';
+    this.cursor.style.width = '10px';
+    this.cursor.style.height = '10px';
+    this.cursor.style.backgroundColor = this.rgbFromArray(this.strokeColor);
+    this.cursor.style.pointerEvents = 'none';
+    */
+  }
+
+  moveCursor(event) {
+    this.cursor.style.top = event.pageY + 'px';
+    this.cursor.style.left = event.pageX + 'px';
   }
 
   clear() {
