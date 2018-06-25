@@ -1,39 +1,47 @@
 class SimpleCanvasDrawing {
-  constructor(element, params) {
-    const { width, height } = params;
-    this.elementId = element;
-    this.canvas = this.getCanvas(element);
-    this.context = this.canvas.getContext('2d', { alpha: false });
+  constructor(params = {}) {
+    const {
+      elementId = this.requiredParam('elementId'),
+      width = this.requiredParam('width'),
+      height = this.requiredParam('height'),
+      lineWidth,
+      strokeColor,
+    } = params;
 
-    this.isDrawing = false;
+    this.elementId = elementId;
+    this.canvas = document.getElementById(this.elementId);
+    this.context = this.canvas.getContext('2d', { alpha: false });
     this.width = width;
     this.height = height;
 
-    this.sectionSize = 20;
-    this.lineWidth = 2;
-    this.strokeColor = [0, 0, 0, 255];
+    this.isDrawing = false;
+    this.lineWidth = lineWidth || 5;
     this.tolerance = false;
-
     this.lastPath = null;
     this.positions = [];
-
     this.leftCanvasDrawing = false; // to check if user left the canvas drawing, on mouseover resume drawing
     this.selectedBucket = false;
     this.allowedEvents = ['redraw'];
     this.isCursorHidden = false;
+    this.setStrokeColor(strokeColor);
 
     this.handleCursor();
     this.setDimensions();
-    this.setBackground();
+    this.setBackground([255, 255, 255, 255]);
     this.addListeners();
+  }
+
+  requiredParam(param) {
+    throw new Error(`${param} is required`);
   }
 
   addListeners() {
     this.canvas.addEventListener('mousedown', event => this.mouseDown(event));
     this.canvas.addEventListener('mousemove', event => this.mouseMove(event));
-    this.canvas.addEventListener('mouseup', () => this.mouseUp());
     this.canvas.addEventListener('mouseleave', () => this.mouseLeave());
-    this.canvas.addEventListener('mouseenter', () => this.mouseEnter());
+    // this.canvas.addEventListener('mouseenter', () => this.mouseEnter());
+    // this is on document to disable turn off 'leftCanvasDrawing'
+    document.addEventListener('mouseup', () => this.mouseUp());
   }
 
   on(event, callback) {
@@ -43,6 +51,7 @@ class SimpleCanvasDrawing {
   }
 
   mouseDown(event) {
+    if (event.button !== 0) return;
     const x = event.pageX - this.canvas.offsetLeft;
     const y = event.pageY - this.canvas.offsetTop;
     if (this.selectedBucket) {
@@ -72,6 +81,7 @@ class SimpleCanvasDrawing {
 
   mouseUp() {
     this.isDrawing = false;
+    this.leftCanvasDrawing = false;
   }
 
   mouseLeave() {
@@ -111,6 +121,7 @@ class SimpleCanvasDrawing {
       }
       this.context.lineTo(x, y);
       this.context.closePath();
+      // this.context.translate(0.5, 0.5);
       this.context.stroke();
     });
 
@@ -120,6 +131,10 @@ class SimpleCanvasDrawing {
 
   // https://en.wikipedia.org/wiki/Flood_fill
   fill(x, y, newColor, tolerance) {
+    if (this.positions.length === 0) {
+      this.setBackground(newColor);
+      return;
+    }
     if (typeof newColor != 'object') throw new Error('New color must be an array like: [255, 255, 255, 255]');
     const start = Date.now();
     const imageData = this.context.getImageData(0, 0, this.width, this.height);
@@ -171,11 +186,15 @@ class SimpleCanvasDrawing {
   // i = color 1; j = color 2; t = tolerance
   isNodeColorEqual(i, j, t) {
     if (t) {
+      // console.log(Math.abs(i[0] - j[0]));
+      // console.log(Math.abs(i[1] - j[1]));
+      // console.log(Math.abs(i[2] - j[2]));
+      // console.log('-------------');
+      // prettier-ignore
       return (
-        Math.abs(i[0] - j[0]) <= t &&
-        Math.abs(i[1] - j[1]) <= t &&
-        Math.abs(i[2] - j[2]) <= t &&
-        Math.abs(i[3] - j[3]) <= t
+        Math.abs(j[0] - i[0]) <= t &&
+        Math.abs(j[1] - i[1]) <= t &&
+        Math.abs(j[2] - i[2]) <= t
       );
     }
     return i[0] === j[0] && i[1] === j[1] && i[2] === j[2] && i[3] === j[3];
@@ -202,11 +221,6 @@ class SimpleCanvasDrawing {
     return `rgb(${a[0]},${a[1]},${a[2]})`;
   }
 
-  // not used anymore
-  getRedrawSection(x, y) {
-    return { x: Math.floor(x / this.sectionSize), y: Math.floor(y / this.sectionSize) };
-  }
-
   setDimensions() {
     this.canvas.height = this.height;
     this.canvas.width = this.width;
@@ -217,15 +231,19 @@ class SimpleCanvasDrawing {
   }
 
   setStrokeColor(color) {
-    this.strokeColor = color;
+    if (typeof color === 'object' && color.length === 3) {
+      color.push(255);
+      this.strokeColor = color;
+    } else if (!color) {
+      this.strokeColor = [0, 0, 0, 255];
+    } else {
+      this.strokeColor = [0, 0, 0, 255];
+      console.error('StrokeColor must be an array like: [255, 255, 255]');
+    }
   }
 
-  getCanvas(id) {
-    return document.getElementById(id);
-  }
-
-  setBackground() {
-    this.context.fillStyle = this.rgbaFromArray([255, 255, 255, 255]);
+  setBackground(color) {
+    this.context.fillStyle = this.rgbaFromArray(color);
     this.context.fillRect(0, 0, this.width, this.height);
   }
 
@@ -258,7 +276,7 @@ class SimpleCanvasDrawing {
     this.lastPath = null;
     this.positions = [];
     this.isDrawing = false;
-    this.setBackground();
+    this.setBackground([255, 255, 255, 255]);
   }
 
   save() {
