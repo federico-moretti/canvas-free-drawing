@@ -1,14 +1,25 @@
 {
-  "name": "simple-canvas-drawing",
+  "name": "canvas-free-drawing",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Simple and straightforward package and APIs that allows you to draw on a canvas html element.",
+  "main": "./lib/canvas-free-drawing.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "compile": "babel src -d lib && minify lib/canvas-free-drawing.js -o lib/canvas-free-drawing.min.js",
+    "prepublish": "npm run compile"
   },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "browser-sync": "^2.24.4"
+  "author": "Federico Moretti",
+  "license": "MIT",
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-minify": "^0.4.3",
+    "babel-preset-env": "^1.6.1",
+    "babel-preset-minify": "^0.4.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ikos9/canvas-free-drawing.git"
+  },
+  "engines": {
+    "node": ">= 8.0.0"
   }
 }

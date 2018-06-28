@@ -70,12 +70,15 @@
   <p id="redraw-count">0</p>
 
 </body>
-<script src="simple-canvas-drawing.js"></script>
+<script src="src/simple-canvas-drawing.js"></script>
 <script>
-  const scd = new SimpleCanvasDrawing({ elementId: 'scd', width: 500, height: 500 });
+  const scd = new CanvasFreeDrawing({ elementId: 'scd', width: 500, height: 500 });
   const redrawCount = document.getElementById('redraw-count');
   scd.on('redraw', () => {
     redrawCount.innerText = parseInt(redrawCount.innerText) + 1;
+  })
+  scd.on('mouseup', () => {
+    console.log('mouseup');
   })
   const textarea = document.getElementById('backup');
   document.getElementById('clear').addEventListener('click', () => scd.clear());
@@ -94,13 +97,13 @@
       document.getElementById('bucket').classList.remove('active');
     }
   });
-  document.getElementById('red').addEventListener('click', () => scd.setStrokeColor([255, 0, 0, 255]));
-  document.getElementById('green').addEventListener('click', () => scd.setStrokeColor([0, 255, 0]));
-  document.getElementById('blue').addEventListener('click', () => scd.setStrokeColor([0, 0, 255]));
-  document.getElementById('black').addEventListener('click', () => scd.setStrokeColor([0, 0, 0]));
-  document.getElementById('darkgrey').addEventListener('click', () => scd.setStrokeColor([50, 50, 50]));
-  document.getElementById('grey').addEventListener('click', () => scd.setStrokeColor([100, 100, 100]));
-  document.getElementById('lightgrey').addEventListener('click', () => scd.setStrokeColor([150, 150, 150]));
+  document.getElementById('red').addEventListener('click', () => scd.setDrawingColor([255, 0, 0]));
+  document.getElementById('green').addEventListener('click', () => scd.setDrawingColor([0, 255, 0]));
+  document.getElementById('blue').addEventListener('click', () => scd.setDrawingColor([0, 0, 255]));
+  document.getElementById('black').addEventListener('click', () => scd.setDrawingColor([0, 0, 0]));
+  document.getElementById('darkgrey').addEventListener('click', () => scd.setDrawingColor([50, 50, 50]));
+  document.getElementById('grey').addEventListener('click', () => scd.setDrawingColor([100, 100, 100]));
+  document.getElementById('lightgrey').addEventListener('click', () => scd.setDrawingColor([150, 150, 150]));
 </script>
 
 </html>

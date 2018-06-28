@@ -4,19 +4,21 @@ Simple and straightforward package and APIs that allows you to draw on a canvas 
 
 ## Features
 
-- Lightweight
-- Simple APIs to change line properties
+- Lightweight (~6KB minified)
+- Simplify canvas APIs
 - Bucket tool
-- Redraw events
+- Events
 
 ## Installing
 
 Using npm:
+
 ```bash
 $ npm install canvas-free-drawing
 ```
 
 Use local file:
+
 ```html
 <script src="canvas-free-drawing.min.js"></script>
 ```
@@ -24,6 +26,7 @@ Use local file:
 ## Example
 
 Basic usage:
+
 ```html
 <canvas id="cfd"></canvas>
 
@@ -50,7 +53,7 @@ cfd.setLineWidth(10);
 // Set stroke color
 cfd.setStrokeColor([0, 0, 255]);
 
-// Set canvas background color as 
+// Set canvas background color as
 cfd.setBackground([0, 0, 0]);
 
 // Toggle bucket tool an returns its state
@@ -66,11 +69,23 @@ cfd.clear();
 const canvasData = cfd.save();
 
 // Restore the canvas previously saved
-cfd.restore(canvasData)
+cfd.restore(canvasData);
+```
 
-// Subscribe to an event emitter, the callback will be called everytime the event will trigger
-// Allowed events:
-// - 'redraw' -> will be triggered everytime the canvas redraws
-cfd.on(event, callback)
+#### Events
 
+Subscribe to an event emitter, the callback will be called everytime the event.
+
+These are the events allowed:
+
+- redraw - will be triggered everytime the canvas redraws
+- mouseup - will be triggered everytime the mouse is released on the canvas element
+- mousedown - will be triggered everytime the mouse is pressed on the canvas element
+- mouseenter - will be triggered everytime the mouse enters the canvas element
+- mouseleave - will be triggered everytime the mouse leaves the canvas element
+
+```js
+cfd.on('redraw', () => {
+  console.log('canvas did redraw');
+});
 ```
