@@ -1,6 +1,6 @@
 # Canvas Free Drawing
 
-Simple and straightforward package and APIs that allows you to draw on a canvas html element.
+Simple and straightforward package that allows you to free draw on a canvas html element.
 
 ## Features
 
@@ -48,7 +48,7 @@ const cfd = new CanvasFreeDrawing({ elementId: 'cfd', width: 500, height: 500 })
 cfd.setLineWidth(10);
 
 // Colors use the following format [0-255, 0-255, 0-255]
-// If you want blue then use should use [0, 0, 255]
+// If you want blue then you should use [0, 0, 255]
 
 // Set stroke color
 cfd.setStrokeColor([0, 0, 255]);
@@ -56,36 +56,40 @@ cfd.setStrokeColor([0, 0, 255]);
 // Set canvas background color as
 cfd.setBackground([0, 0, 0]);
 
-// Toggle bucket tool an returns its state
+// Toggle bucket tool and returns its state
 cfd.toggleBucket();
 
 // Check if bucket tool is active
 cfd.isBucketActive();
 
-// Clear the canvas and set the last set background or white
+// Clear the canvas
 cfd.clear();
 
-// Save the canvas as base64 and returns it - uses the native method toDataURL()
+// Save the canvas as base64 and returns a string - this method uses the native method toDataURL()
 const canvasData = cfd.save();
 
-// Restore the canvas previously saved
+// Restore the canvas from the string previously saved
 cfd.restore(canvasData);
 ```
 
 #### Events
 
-Subscribe to an event emitter, the callback will be called everytime the event.
+Subscribe to an event emitter, the callback will be called everytime the event gets called.
 
 These are the events allowed:
 
-- redraw - will be triggered everytime the canvas redraws
-- mouseup - will be triggered everytime the mouse is released on the canvas element
-- mousedown - will be triggered everytime the mouse is pressed on the canvas element
-- mouseenter - will be triggered everytime the mouse enters the canvas element
-- mouseleave - will be triggered everytime the mouse leaves the canvas element
+- redraw
+- mouseup
+- mousedown
+- mouseenter
+- mouseleave
 
 ```js
 cfd.on('redraw', () => {
   console.log('canvas did redraw');
 });
 ```
+
+## Licence
+
+Federico Moretti - MIT

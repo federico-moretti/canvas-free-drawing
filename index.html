@@ -47,7 +47,7 @@
 
 <body>
   <p>Canvas:</p>
-  <canvas id="scd"></canvas>
+  <canvas id="cfd"></canvas>
   <button id="clear">Clear canvas</button>
   <button id="save">Save canvas</button>
   <button id="restore">Restore canvas</button>
@@ -70,40 +70,37 @@
   <p id="redraw-count">0</p>
 
 </body>
-<script src="src/simple-canvas-drawing.js"></script>
+<script src="src/canvas-free-drawing.js"></script>
 <script>
-  const scd = new CanvasFreeDrawing({ elementId: 'scd', width: 500, height: 500 });
+  const cfd = new CanvasFreeDrawing({ elementId: 'cfd', width: 500, height: 500 });
   const redrawCount = document.getElementById('redraw-count');
-  scd.on('redraw', () => {
+  cfd.on('redraw', () => {
     redrawCount.innerText = parseInt(redrawCount.innerText) + 1;
   })
-  scd.on('mouseup', () => {
-    console.log('mouseup');
-  })
   const textarea = document.getElementById('backup');
-  document.getElementById('clear').addEventListener('click', () => scd.clear());
+  document.getElementById('clear').addEventListener('click', () => cfd.clear());
   document.getElementById('save').addEventListener('click', () => {
-    textarea.value = scd.save();
+    textarea.value = cfd.save();
   });
   document.getElementById('restore').addEventListener('click', () => {
-    scd.restore(textarea.value);
+    cfd.restore(textarea.value);
   });
   document.getElementById('bucket').addEventListener('click', () => {
-    scd.tolerance = document.getElementById('tolerance').value;
-    const isActive = scd.toggleBucket();
+    cfd.tolerance = document.getElementById('tolerance').value;
+    const isActive = cfd.toggleBucket();
     document.getElementById('bucket').classList.add('active');
     if (isActive) {
     } else {
       document.getElementById('bucket').classList.remove('active');
     }
   });
-  document.getElementById('red').addEventListener('click', () => scd.setDrawingColor([255, 0, 0]));
-  document.getElementById('green').addEventListener('click', () => scd.setDrawingColor([0, 255, 0]));
-  document.getElementById('blue').addEventListener('click', () => scd.setDrawingColor([0, 0, 255]));
-  document.getElementById('black').addEventListener('click', () => scd.setDrawingColor([0, 0, 0]));
-  document.getElementById('darkgrey').addEventListener('click', () => scd.setDrawingColor([50, 50, 50]));
-  document.getElementById('grey').addEventListener('click', () => scd.setDrawingColor([100, 100, 100]));
-  document.getElementById('lightgrey').addEventListener('click', () => scd.setDrawingColor([150, 150, 150]));
+  document.getElementById('red').addEventListener('click', () => cfd.setDrawingColor([255, 0, 0]));
+  document.getElementById('green').addEventListener('click', () => cfd.setDrawingColor([0, 255, 0]));
+  document.getElementById('blue').addEventListener('click', () => cfd.setDrawingColor([0, 0, 255]));
+  document.getElementById('black').addEventListener('click', () => cfd.setDrawingColor([0, 0, 0]));
+  document.getElementById('darkgrey').addEventListener('click', () => cfd.setDrawingColor([50, 50, 50]));
+  document.getElementById('grey').addEventListener('click', () => cfd.setDrawingColor([100, 100, 100]));
+  document.getElementById('lightgrey').addEventListener('click', () => cfd.setDrawingColor([150, 150, 150]));
 </script>
 
 </html>

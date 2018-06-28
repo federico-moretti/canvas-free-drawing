@@ -141,8 +141,9 @@ class CanvasFreeDrawing {
 
   // https://en.wikipedia.org/wiki/Flood_fill
   fill(x, y, newColor, tolerance) {
+    console.log('fill color', newColor);
     if (this.positions.length === 0 && !this.imageRestored) {
-      this.setBackground(newColor);
+      this.setBackground(newColor, false);
       return;
     }
     if (typeof newColor != 'object') throw new Error('New color must be an array like: [255, 255, 255, 255]');
@@ -188,7 +189,6 @@ class CanvasFreeDrawing {
 
     this.context.putImageData(imageData, 0, 0);
 
-    const redrawEvent = new Event('redraw');
     this.canvas.dispatchEvent(redrawEvent);
     console.log(`Execution flood-fill: ${Date.now() - start} ms`);
   }
@@ -257,10 +257,10 @@ class CanvasFreeDrawing {
     this.lineWidth = px;
   }
 
-  setBackground(color) {
+  setBackground(color, save = true) {
     const validColor = this.validateColor(color);
     if (validColor) {
-      this.backgroundColor = validColor;
+      if (save) this.backgroundColor = validColor;
       this.context.fillStyle = this.rgbaFromArray(validColor);
       this.context.fillRect(0, 0, this.width, this.height);
     }
@@ -287,6 +287,10 @@ class CanvasFreeDrawing {
 
   toggleBucket() {
     return (this.selectedBucket = !this.selectedBucket);
+  }
+
+  isBucketActive() {
+    return this.selectedBucket;
   }
 
   clear() {
