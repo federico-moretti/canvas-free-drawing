@@ -53,7 +53,6 @@ class CanvasFreeDrawing {
   }
 
   mouseDown(event) {
-    console.log('mousedown in');
     if (event.button !== 0) return;
     const x = event.pageX - this.canvas.offsetLeft;
     const y = event.pageY - this.canvas.offsetTop;
@@ -99,7 +98,6 @@ class CanvasFreeDrawing {
   }
 
   mouseEnter() {
-    console.log('mouse enter');
     this.canvas.dispatchEvent(this.mouseEnterEvent);
   }
 
@@ -141,7 +139,6 @@ class CanvasFreeDrawing {
 
   // https://en.wikipedia.org/wiki/Flood_fill
   fill(x, y, newColor, tolerance) {
-    console.log('fill color', newColor);
     if (this.positions.length === 0 && !this.imageRestored) {
       this.setBackground(newColor, false);
       return;
@@ -188,9 +185,8 @@ class CanvasFreeDrawing {
     }
 
     this.context.putImageData(imageData, 0, 0);
-
     this.canvas.dispatchEvent(this.redrawEvent);
-    console.log(`Execution flood-fill: ${Date.now() - start} ms`);
+    // console.log(`Execution flood-fill: ${Date.now() - start} ms`);
   }
 
   // i = color 1; j = color 2; t = tolerance
