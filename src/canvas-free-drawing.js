@@ -189,7 +189,7 @@ class CanvasFreeDrawing {
 
     this.context.putImageData(imageData, 0, 0);
 
-    this.canvas.dispatchEvent(redrawEvent);
+    this.canvas.dispatchEvent(this.redrawEvent);
     console.log(`Execution flood-fill: ${Date.now() - start} ms`);
   }
 
@@ -267,11 +267,8 @@ class CanvasFreeDrawing {
   }
 
   setDrawingColor(color) {
-    console.log(1, color);
     this.setBucketTool({ color });
-    console.log(2, color);
     this.setStrokeColor(color);
-    console.log(3, color);
   }
 
   setStrokeColor(color) {
@@ -280,7 +277,6 @@ class CanvasFreeDrawing {
 
   setBucketTool(params) {
     const { color = null, tolerance = null } = params;
-    console.log(color);
     if (color) this.bucketToolColor = this.validateColor(color);
     if (tolerance && tolerance > 0) this.bucketToolTolerance = tolerance;
   }

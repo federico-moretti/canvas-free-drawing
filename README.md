@@ -2,6 +2,8 @@
 
 Simple and straightforward package that allows you to free draw on a canvas html element.
 
+You can try it [here](https://fmoretti.com/canvas-free-drawing)!
+
 ## Features
 
 - Lightweight (~6KB minified)
@@ -14,7 +16,7 @@ Simple and straightforward package that allows you to free draw on a canvas html
 Using npm:
 
 ```bash
-$ npm install canvas-free-drawing
+npm install canvas-free-drawing
 ```
 
 Use local file:
@@ -31,48 +33,80 @@ Basic usage:
 <canvas id="cfd"></canvas>
 
 <script>
+  // initialize
   const cfd = new CanvasFreeDrawing({ elementId: 'cfd', width: 500, height: 500 });
+
+  // set properties
+  cfd.setLineWidth(10); // in px
+  cfd.setStrokeColor([0, 0, 255]); // in RGB
+
+  // listen to events
+  cfd.on('redraw', () => {
+    console.log('canvas did redraw');
+  });
 </script>
 ```
 
-## APIs
+## API
 
-```js
-// Create new CanvasFreeDrawing instance
-// Required params: elementId, width and height
-const cfd = new CanvasFreeDrawing({ elementId: 'cfd', width: 500, height: 500 });
+#### `new CanvasFreeDrawing(params: object)`
 
-// Other APIs
+Initialize the module.
 
-// Set line width in pixel
-cfd.setLineWidth(10);
+- **elementId**: string
+- **width**: integer
+- **height**: integer
+- lineWidth: integer
+- strokeColor: array(3)
 
-// Colors use the following format [0-255, 0-255, 0-255]
-// If you want blue then you should use [0, 0, 255]
+#### `setLineWidth(pixels: integer)`
 
-// Set stroke color
-cfd.setStrokeColor([0, 0, 255]);
+Set line width
 
-// Set canvas background color as
-cfd.setBackground([0, 0, 0]);
+#### `setStrokeColor(color: array(3))`
 
-// Toggle bucket tool and returns its state
-cfd.toggleBucket();
+Set line color
 
-// Check if bucket tool is active
-cfd.isBucketActive();
+#### `setDrawingColor(color: array(3))`
 
-// Clear the canvas
-cfd.clear();
+Set both bucket and line color
 
-// Save the canvas as base64 and returns a string - this method uses the native method toDataURL()
-const canvasData = cfd.save();
+#### `setBackground(color: array(3))`
 
-// Restore the canvas from the string previously saved
-cfd.restore(canvasData);
-```
+Set background color
 
-#### Events
+#### `setBucketTool(params: object)`
+
+Set bucket tool parameters.
+
+- color: array(3)
+- tolerance: integer
+
+#### `toggleBucket: boolean`
+
+Toggle bucket tool, returns the state
+
+#### `isBucketActive: boolean`
+
+Check if bucket tool is active
+
+#### `clear`
+
+Clear the canvas
+
+#### `save: string`
+
+Save the canvas as base64 and returns a string - this method uses the native method toDataURL()
+
+#### `restore(data: string)`
+
+Restore the canvas from the string previously saved
+
+### Notes:
+
+Colors must be set with an array indicating the RGB values: [0-255, 0-255, 0-255].
+
+### Events
 
 Subscribe to an event emitter, the callback will be called everytime the event gets called.
 
@@ -92,4 +126,4 @@ cfd.on('redraw', () => {
 
 ## Licence
 
-Federico Moretti - MIT
+[MIT](LICENSE) © [Federico Moretti](https://fmoretti.com)
