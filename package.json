@@ -5,7 +5,7 @@
   "main": "./lib/canvas-free-drawing.js",
   "scripts": {
     "compile": "babel src -d lib && minify lib/canvas-free-drawing.js -o lib/canvas-free-drawing.min.js",
-    "prepublish": "npm run compile"
+    "prepare": "npm run compile"
   },
   "author": "Federico Moretti",
   "license": "MIT",
