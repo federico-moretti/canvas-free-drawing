@@ -2,7 +2,7 @@
   "name": "canvas-free-drawing",
   "version": "1.0.1",
   "description": "Simple and straightforward package and APIs that allows you to draw on a canvas html element.",
-  "main": "./lib/canvas-free-drawing.js",
+  "main": "./umd/canvas-free-drawing.js",
   "scripts": {
     "rollup": "rollup src/index.js --file umd/canvas-free-drawing.js --format umd --name CanvasFreeDrawing",
     "compile": "babel umd/canvas-free-drawing.js -o dist/canvas-free-drawing.js",
