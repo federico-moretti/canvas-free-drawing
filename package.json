@@ -4,8 +4,10 @@
   "description": "Simple and straightforward package and APIs that allows you to draw on a canvas html element.",
   "main": "./lib/canvas-free-drawing.js",
   "scripts": {
-    "compile": "babel src -d lib && minify lib/canvas-free-drawing.js -o lib/canvas-free-drawing.min.js",
-    "prepare": "npm run compile"
+    "rollup": "rollup src/index.js --file umd/canvas-free-drawing.js --format umd --name CanvasFreeDrawing",
+    "compile": "babel umd/canvas-free-drawing.js -o dist/canvas-free-drawing.js",
+    "minify": "minify umd/canvas-free-drawing.js -o dist/canvas-free-drawing.min.js",
+    "prepare": "npm run compile && npm run minify"
   },
   "author": "Federico Moretti",
   "license": "MIT",
@@ -13,7 +15,8 @@
     "babel-cli": "^6.26.0",
     "babel-minify": "^0.4.3",
     "babel-preset-env": "^1.6.1",
-    "babel-preset-minify": "^0.4.3"
+    "babel-preset-minify": "^0.4.3",
+    "rollup": "^0.62.0"
   },
   "repository": {
     "type": "git",

@@ -52,6 +52,8 @@
   <button id="save">Save canvas</button>
   <button id="restore">Restore canvas</button>
   <button id="bucket">Bucket</button>
+  <button id="disable">Disable</button>
+  <button id="enable">Enable</button>
   <input id="tolerance" type="text">
   <br>
   <br>
@@ -70,7 +72,7 @@
   <p id="redraw-count">0</p>
 
 </body>
-<script src="src/canvas-free-drawing.js"></script>
+<script src="umd/canvas-free-drawing.js"></script>
 <script>
   const cfd = new CanvasFreeDrawing({ elementId: 'cfd', width: 500, height: 500 });
   const redrawCount = document.getElementById('redraw-count');
@@ -79,6 +81,8 @@
   })
   const textarea = document.getElementById('backup');
   document.getElementById('clear').addEventListener('click', () => cfd.clear());
+  document.getElementById('disable').addEventListener('click', () => cfd.disableDrawing());
+  document.getElementById('enable').addEventListener('click', () => cfd.enableDrawing());
   document.getElementById('save').addEventListener('click', () => {
     textarea.value = cfd.save();
   });
