@@ -32,6 +32,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
       this.elementId = elementId;
       this.canvas = document.getElementById(this.elementId);
+      this.checkCanvasElement();
       this.context = this.canvas.getContext('2d', { alpha: false });
       this.width = width;
       this.height = height;
@@ -75,6 +76,15 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
       key: 'requiredParam',
       value: function requiredParam(param) {
         throw new Error(param + ' is required');
+      }
+    }, {
+      key: 'checkCanvasElement',
+      value: function checkCanvasElement() {
+        if (this.canvas.tagName !== 'CANVAS') {
+          var newCanvas = document.createElement('canvas');
+          this.canvas.appendChild(newCanvas);
+          this.canvas = newCanvas;
+        }
       }
     }, {
       key: 'addListeners',
