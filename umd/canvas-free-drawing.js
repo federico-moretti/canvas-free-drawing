@@ -20,6 +20,7 @@
 
       this.elementId = elementId;
       this.canvas = document.getElementById(this.elementId);
+      this.checkCanvasElement();
       this.context = this.canvas.getContext('2d', { alpha: false });
       this.width = width;
       this.height = height;
@@ -61,6 +62,14 @@
 
     requiredParam(param) {
       throw new Error(`${param} is required`);
+    }
+
+    checkCanvasElement() {
+      if (this.canvas.tagName !== 'CANVAS') {
+        const newCanvas = document.createElement('canvas');
+        this.canvas.appendChild(newCanvas);
+        this.canvas = newCanvas;
+      }
     }
 
     addListeners() {
