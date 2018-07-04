@@ -98,7 +98,7 @@
       this.toggleCursor();
     }
 
-    mouseDown() {
+    mouseDown(event) {
       if (event.button !== 0) return;
       const x = event.pageX - this.canvas.offsetLeft;
       const y = event.pageY - this.canvas.offsetTop;
@@ -115,7 +115,7 @@
       this.redraw();
     }
 
-    mouseMove() {
+    mouseMove(event) {
       if (this.leftCanvasDrawing) {
         this.leftCanvasDrawing = false;
         this.mouseDown(event);
