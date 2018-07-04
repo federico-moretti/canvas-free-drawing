@@ -118,7 +118,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
       }
     }, {
       key: 'mouseDown',
-      value: function mouseDown() {
+      value: function mouseDown(event) {
         if (event.button !== 0) return;
         var x = event.pageX - this.canvas.offsetLeft;
         var y = event.pageY - this.canvas.offsetTop;
@@ -136,7 +136,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
       }
     }, {
       key: 'mouseMove',
-      value: function mouseMove() {
+      value: function mouseMove(event) {
         if (this.leftCanvasDrawing) {
           this.leftCanvasDrawing = false;
           this.mouseDown(event);
