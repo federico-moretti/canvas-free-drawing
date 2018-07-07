@@ -2,12 +2,13 @@
   "name": "canvas-free-drawing",
   "version": "1.0.4",
   "description": "Simple, lightweight and straightforward package that allows you to free draw on a canvas html element.",
-  "main": "./umd/canvas-free-drawing.js",
+  "main": "src/index.js",
+  "module": "cjs/index.js",
   "scripts": {
-    "rollup": "rollup src/index.js --file umd/canvas-free-drawing.js --format umd --name CanvasFreeDrawing",
-    "compile": "babel umd/canvas-free-drawing.js -o dist/canvas-free-drawing.js",
-    "minify": "minify umd/canvas-free-drawing.js -o dist/canvas-free-drawing.min.js",
-    "prepare": "npm run compile && npm run minify"
+    "build:cjs": "babel src/index.js -o cjs/index.js",
+    "build:umd": "rollup --config rollup.config.js",
+    "minify:umd": "minify dist/canvas-free-drawing.js -o dist/canvas-free-drawing.min.js",
+    "prepare": "npm run build:cjs && npm run build:umd && npm run minify:umd"
   },
   "author": "Federico Moretti",
   "license": "MIT",
@@ -21,6 +22,7 @@
   "devDependencies": {
     "babel-cli": "^6.26.0",
     "babel-minify": "^0.4.3",
+    "babel-plugin-transform-es2015-modules-umd": "^6.24.1",
     "babel-preset-env": "^1.6.1",
     "babel-preset-minify": "^0.4.3",
     "rollup": "^0.62.0"
@@ -31,5 +33,8 @@
   },
   "engines": {
     "node": ">= 8.0.0"
+  },
+  "dependencies": {
+    "rollup-plugin-babel": "^3.0.7"
   }
 }

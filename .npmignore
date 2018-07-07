@@ -2,3 +2,8 @@ node_modules
 src
 .vscode
 index.html
+yarn-error.log
+yarn.lock
+.babelrc
+.prettierrc
+rollup.config.js

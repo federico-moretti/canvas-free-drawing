@@ -1,22 +1,33 @@
-(function(global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined'
-    ? (module.exports = factory())
-    : typeof define === 'function' && define.amd
-      ? define(factory)
-      : (global.CanvasFreeDrawing = factory());
-})(this, function() {
-  'use strict';
+(function (global, factory) {
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+  typeof define === 'function' && define.amd ? define(factory) :
+  (global.CanvasFreeDrawing = factory());
+}(this, (function () { 'use strict';
 
-  class CanvasFreeDrawing {
-    constructor(params = {}) {
-      const {
-        elementId = this.requiredParam('elementId'),
-        width = this.requiredParam('width'),
-        height = this.requiredParam('height'),
-        lineWidth,
-        strokeColor,
-        disabled,
-      } = params;
+  var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+  var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+  function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+  function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+  var CanvasFreeDrawing = function () {
+    function CanvasFreeDrawing() {
+      var params = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+      _classCallCheck(this, CanvasFreeDrawing);
+
+      var _params$elementId = params.elementId,
+          elementId = _params$elementId === undefined ? this.requiredParam('elementId') : _params$elementId,
+          _params$width = params.width,
+          width = _params$width === undefined ? this.requiredParam('width') : _params$width,
+          _params$height = params.height,
+          height = _params$height === undefined ? this.requiredParam('height') : _params$height,
+          lineWidth = params.lineWidth,
+          strokeColor = params.strokeColor,
+          disabled = params.disabled;
+
 
       this.elementId = elementId;
       this.canvas = document.getElementById(this.elementId);
@@ -60,300 +71,357 @@
       }
     }
 
-    requiredParam(param) {
-      throw new Error(`${param} is required`);
-    }
-
-    checkCanvasElement() {
-      if (this.canvas.tagName !== 'CANVAS') {
-        const newCanvas = document.createElement('canvas');
-        this.canvas.appendChild(newCanvas);
-        this.canvas = newCanvas;
+    _createClass(CanvasFreeDrawing, [{
+      key: 'requiredParam',
+      value: function requiredParam(param) {
+        throw new Error(param + ' is required');
       }
-    }
-
-    addListeners() {
-      this.canvas.addEventListener('mousedown', this.mouseDown);
-      this.canvas.addEventListener('mousemove', this.mouseMove);
-      this.canvas.addEventListener('mouseleave', this.mouseLeave);
-      this.canvas.addEventListener('mouseup', this.mouseUp);
-      document.addEventListener('mouseup', this.mouseUpDocument);
-    }
-
-    removeListeners() {
-      this.canvas.removeEventListener('mousedown', this.mouseDown);
-      this.canvas.removeEventListener('mouseMove', this.mouseMove);
-      this.canvas.removeEventListener('mouseLeave', this.mouseLeave);
-      this.canvas.removeEventListener('mouseUp', this.mouseUp);
-      document.removeEventListener('mouseUp', this.mouseUpDocument);
-    }
-
-    enableDrawing() {
-      this.addListeners();
-      this.toggleCursor();
-    }
-
-    disableDrawing() {
-      this.removeListeners();
-      this.toggleCursor();
-    }
-
-    mouseDown(event) {
-      if (event.button !== 0) return;
-      const x = event.pageX - this.canvas.offsetLeft;
-      const y = event.pageY - this.canvas.offsetTop;
-      if (this.selectedBucket) {
-        this.fill(x, y, this.bucketToolColor, this.bucketToolTolerance);
-        return;
+    }, {
+      key: 'checkCanvasElement',
+      value: function checkCanvasElement() {
+        if (this.canvas.tagName !== 'CANVAS') {
+          var newCanvas = document.createElement('canvas');
+          this.canvas.appendChild(newCanvas);
+          this.canvas = newCanvas;
+        }
       }
-      this.isDrawing = true;
-      const lenght = this.storeDrawing(x, y, false);
-      this.lastPath = lenght - 1; // index last new path
-
-      this.canvas.dispatchEvent(this.mouseDownEvent);
-
-      this.redraw();
-    }
-
-    mouseMove(event) {
-      if (this.leftCanvasDrawing) {
-        this.leftCanvasDrawing = false;
-        this.mouseDown(event);
+    }, {
+      key: 'addListeners',
+      value: function addListeners() {
+        this.canvas.addEventListener('mousedown', this.mouseDown);
+        this.canvas.addEventListener('mousemove', this.mouseMove);
+        this.canvas.addEventListener('mouseleave', this.mouseLeave);
+        this.canvas.addEventListener('mouseup', this.mouseUp);
+        document.addEventListener('mouseup', this.mouseUpDocument);
       }
-      if (this.isDrawing) {
-        const x = event.pageX - this.canvas.offsetLeft;
-        const y = event.pageY - this.canvas.offsetTop;
-        this.storeDrawing(x, y, true);
+    }, {
+      key: 'removeListeners',
+      value: function removeListeners() {
+        this.canvas.removeEventListener('mousedown', this.mouseDown);
+        this.canvas.removeEventListener('mouseMove', this.mouseMove);
+        this.canvas.removeEventListener('mouseLeave', this.mouseLeave);
+        this.canvas.removeEventListener('mouseUp', this.mouseUp);
+        document.removeEventListener('mouseUp', this.mouseUpDocument);
+      }
+    }, {
+      key: 'enableDrawing',
+      value: function enableDrawing() {
+        this.addListeners();
+        this.toggleCursor();
+      }
+    }, {
+      key: 'disableDrawing',
+      value: function disableDrawing() {
+        this.removeListeners();
+        this.toggleCursor();
+      }
+    }, {
+      key: 'mouseDown',
+      value: function mouseDown(event) {
+        if (event.button !== 0) return;
+        var x = event.pageX - this.canvas.offsetLeft;
+        var y = event.pageY - this.canvas.offsetTop;
+        if (this.selectedBucket) {
+          this.fill(x, y, this.bucketToolColor, this.bucketToolTolerance);
+          return;
+        }
+        this.isDrawing = true;
+        var lenght = this.storeDrawing(x, y, false);
+        this.lastPath = lenght - 1; // index last new path
+
+        this.canvas.dispatchEvent(this.mouseDownEvent);
+
         this.redraw();
       }
-    }
-
-    mouseUp() {
-      this.isDrawing = false;
-      this.canvas.dispatchEvent(this.mouseUpEvent);
-    }
-
-    mouseUpDocument() {
-      this.leftCanvasDrawing = false;
-    }
-
-    mouseLeave() {
-      if (this.isDrawing) this.leftCanvasDrawing = true;
-      this.isDrawing = false;
-      this.canvas.dispatchEvent(this.mouseLeaveEvent);
-    }
-
-    mouseEnter() {
-      this.canvas.dispatchEvent(this.mouseEnterEvent);
-    }
-
-    toggleCursor() {
-      if (this.canvas.style.cursor === 'crosshair') {
-        this.canvas.style.cursor = 'auto';
-      } else {
-        this.canvas.style.cursor = 'crosshair';
+    }, {
+      key: 'mouseMove',
+      value: function mouseMove(event) {
+        if (this.leftCanvasDrawing) {
+          this.leftCanvasDrawing = false;
+          this.mouseDown(event);
+        }
+        if (this.isDrawing) {
+          var x = event.pageX - this.canvas.offsetLeft;
+          var y = event.pageY - this.canvas.offsetTop;
+          this.storeDrawing(x, y, true);
+          this.redraw();
+        }
       }
-    }
-
-    storeDrawing(x, y, moving) {
-      return this.positions.push({ x, y, moving });
-    }
-
-    redraw(all) {
-      this.context.strokeStyle = this.rgbaFromArray(this.strokeColor);
-      this.context.lineJoin = 'round';
-      this.context.lineWidth = this.lineWidth;
-
-      let position = [];
-
-      if (all) {
-        position = this.positions;
-      } else {
-        position = this.positions.slice(this.lastPath);
+    }, {
+      key: 'mouseUp',
+      value: function mouseUp() {
+        this.isDrawing = false;
+        this.canvas.dispatchEvent(this.mouseUpEvent);
       }
-
-      position.forEach(({ x, y, moving }, i) => {
-        this.context.beginPath();
-        if (moving && i) {
-          this.context.moveTo(position[i - 1]['x'], position[i - 1]['y']);
+    }, {
+      key: 'mouseUpDocument',
+      value: function mouseUpDocument() {
+        this.leftCanvasDrawing = false;
+      }
+    }, {
+      key: 'mouseLeave',
+      value: function mouseLeave() {
+        if (this.isDrawing) this.leftCanvasDrawing = true;
+        this.isDrawing = false;
+        this.canvas.dispatchEvent(this.mouseLeaveEvent);
+      }
+    }, {
+      key: 'mouseEnter',
+      value: function mouseEnter() {
+        this.canvas.dispatchEvent(this.mouseEnterEvent);
+      }
+    }, {
+      key: 'toggleCursor',
+      value: function toggleCursor() {
+        if (this.canvas.style.cursor === 'crosshair') {
+          this.canvas.style.cursor = 'auto';
         } else {
-          this.context.moveTo(x - 1, y);
+          this.canvas.style.cursor = 'crosshair';
         }
-        this.context.lineTo(x, y);
-        this.context.closePath();
-        this.context.stroke();
-      });
-
-      this.canvas.dispatchEvent(this.redrawEvent);
-    }
-
-    // https://en.wikipedia.org/wiki/Flood_fill
-    fill(x, y, newColor, tolerance) {
-      if (this.positions.length === 0 && !this.imageRestored) {
-        this.setBackground(newColor, false);
-        return;
       }
-      if (typeof newColor != 'object') throw new Error('New color must be an array like: [255, 255, 255, 255]');
-      const imageData = this.context.getImageData(0, 0, this.width, this.height);
-      const data = imageData.data;
-      const nodeColor = this.getNodeColor(x, y, data);
-      const targetColor = this.getNodeColor(x, y, data);
-      if (this.isNodeColorEqual(targetColor, newColor, tolerance)) return;
-      if (!this.isNodeColorEqual(nodeColor, targetColor)) return;
-      const queue = [];
-      queue.push([x, y]);
+    }, {
+      key: 'storeDrawing',
+      value: function storeDrawing(x, y, moving) {
+        return this.positions.push({ x: x, y: y, moving: moving });
+      }
+    }, {
+      key: 'redraw',
+      value: function redraw(all) {
+        var _this = this;
 
-      while (queue.length) {
-        if (queue.length > this.width * this.height) break;
-        const n = queue.pop();
-        let w = n;
-        let e = n;
+        this.context.strokeStyle = this.rgbaFromArray(this.strokeColor);
+        this.context.lineJoin = 'round';
+        this.context.lineWidth = this.lineWidth;
 
-        while (this.isNodeColorEqual(this.getNodeColor(w[0] - 1, w[1], data), targetColor, tolerance)) {
-          w = [w[0] - 1, w[1]];
+        var position = [];
+
+        if (all) {
+          position = this.positions;
+        } else {
+          position = this.positions.slice(this.lastPath);
         }
 
-        while (this.isNodeColorEqual(this.getNodeColor(e[0] + 1, e[1], data), targetColor, tolerance)) {
-          e = [e[0] + 1, e[1]];
+        position.forEach(function (_ref, i) {
+          var x = _ref.x,
+              y = _ref.y,
+              moving = _ref.moving;
+
+          _this.context.beginPath();
+          if (moving && i) {
+            _this.context.moveTo(position[i - 1]['x'], position[i - 1]['y']);
+          } else {
+            _this.context.moveTo(x - 1, y);
+          }
+          _this.context.lineTo(x, y);
+          _this.context.closePath();
+          _this.context.stroke();
+        });
+
+        this.canvas.dispatchEvent(this.redrawEvent);
+      }
+
+      // https://en.wikipedia.org/wiki/Flood_fill
+
+    }, {
+      key: 'fill',
+      value: function fill(x, y, newColor, tolerance) {
+        if (this.positions.length === 0 && !this.imageRestored) {
+          this.setBackground(newColor, false);
+          return;
         }
+        if ((typeof newColor === 'undefined' ? 'undefined' : _typeof(newColor)) != 'object') throw new Error('New color must be an array like: [255, 255, 255, 255]');
+        var imageData = this.context.getImageData(0, 0, this.width, this.height);
+        var data = imageData.data;
+        var nodeColor = this.getNodeColor(x, y, data);
+        var targetColor = this.getNodeColor(x, y, data);
+        if (this.isNodeColorEqual(targetColor, newColor, tolerance)) return;
+        if (!this.isNodeColorEqual(nodeColor, targetColor)) return;
+        var queue = [];
+        queue.push([x, y]);
 
-        const firstNode = w[0];
-        const lastNode = e[0];
+        while (queue.length) {
+          if (queue.length > this.width * this.height) break;
+          var n = queue.pop();
+          var w = n;
+          var e = n;
 
-        for (let i = firstNode; i <= lastNode; i++) {
-          this.setNodeColor(i, w[1], newColor, data);
-
-          if (this.isNodeColorEqual(this.getNodeColor(i, w[1] + 1, data), targetColor, tolerance)) {
-            queue.push([i, w[1] + 1]);
+          while (this.isNodeColorEqual(this.getNodeColor(w[0] - 1, w[1], data), targetColor, tolerance)) {
+            w = [w[0] - 1, w[1]];
           }
 
-          if (this.isNodeColorEqual(this.getNodeColor(i, w[1] - 1, data), targetColor, tolerance)) {
-            queue.push([i, w[1] - 1]);
+          while (this.isNodeColorEqual(this.getNodeColor(e[0] + 1, e[1], data), targetColor, tolerance)) {
+            e = [e[0] + 1, e[1]];
+          }
+
+          var firstNode = w[0];
+          var lastNode = e[0];
+
+          for (var i = firstNode; i <= lastNode; i++) {
+            this.setNodeColor(i, w[1], newColor, data);
+
+            if (this.isNodeColorEqual(this.getNodeColor(i, w[1] + 1, data), targetColor, tolerance)) {
+              queue.push([i, w[1] + 1]);
+            }
+
+            if (this.isNodeColorEqual(this.getNodeColor(i, w[1] - 1, data), targetColor, tolerance)) {
+              queue.push([i, w[1] - 1]);
+            }
           }
         }
+
+        this.context.putImageData(imageData, 0, 0);
+        this.canvas.dispatchEvent(this.redrawEvent);
       }
 
-      this.context.putImageData(imageData, 0, 0);
-      this.canvas.dispatchEvent(this.redrawEvent);
-    }
+      // i = color 1; j = color 2; t = tolerance
 
-    // i = color 1; j = color 2; t = tolerance
-    isNodeColorEqual(i, j, t) {
-      if (t) {
-        // prettier-ignore
-        return (
-          Math.abs(j[0] - i[0]) <= t &&
-          Math.abs(j[1] - i[1]) <= t &&
-          Math.abs(j[2] - i[2]) <= t
-        );
+    }, {
+      key: 'isNodeColorEqual',
+      value: function isNodeColorEqual(i, j, t) {
+        if (t) {
+          // prettier-ignore
+          return Math.abs(j[0] - i[0]) <= t && Math.abs(j[1] - i[1]) <= t && Math.abs(j[2] - i[2]) <= t;
+        }
+        return i[0] === j[0] && i[1] === j[1] && i[2] === j[2] && i[3] === j[3];
       }
-      return i[0] === j[0] && i[1] === j[1] && i[2] === j[2] && i[3] === j[3];
-    }
-
-    getNodeColor(x, y, data) {
-      const i = (x + y * this.width) * 4;
-      return [data[i], data[i + 1], data[i + 2], data[i + 3]];
-    }
-
-    setNodeColor(x, y, color, data) {
-      const i = (x + y * this.width) * 4;
-      data[i] = color[0];
-      data[i + 1] = color[1];
-      data[i + 2] = color[2];
-      data[i + 3] = color[3];
-    }
-
-    rgbaFromArray(a) {
-      return `rgba(${a[0]},${a[1]},${a[2]},${a[3]})`;
-    }
-
-    rgbFromArray(a) {
-      return `rgb(${a[0]},${a[1]},${a[2]})`;
-    }
-
-    setDimensions() {
-      this.canvas.height = this.height;
-      this.canvas.width = this.width;
-    }
-
-    validateColor(color, placeholder) {
-      if (typeof color === 'object' && color.length === 4) color.pop();
-      if (typeof color === 'object' && color.length === 3) {
-        const validColor = [...color];
-        validColor.push(255);
-        return validColor;
-      } else if (placeholder) {
-        return [0, 0, 0, 255];
+    }, {
+      key: 'getNodeColor',
+      value: function getNodeColor(x, y, data) {
+        var i = (x + y * this.width) * 4;
+        return [data[i], data[i + 1], data[i + 2], data[i + 3]];
       }
-      console.warn('Color was not valid!');
-      return null;
-    }
-
-    // Public APIs
-
-    on(event, callback) {
-      if (this.allowedEvents.includes(event)) {
-        this.canvas.addEventListener('cfd_' + event, () => callback());
+    }, {
+      key: 'setNodeColor',
+      value: function setNodeColor(x, y, color, data) {
+        var i = (x + y * this.width) * 4;
+        data[i] = color[0];
+        data[i + 1] = color[1];
+        data[i + 2] = color[2];
+        data[i + 3] = color[3];
       }
-    }
-
-    setLineWidth(px) {
-      this.lineWidth = px;
-    }
-
-    setBackground(color, save = true) {
-      const validColor = this.validateColor(color);
-      if (validColor) {
-        if (save) this.backgroundColor = validColor;
-        this.context.fillStyle = this.rgbaFromArray(validColor);
-        this.context.fillRect(0, 0, this.width, this.height);
+    }, {
+      key: 'rgbaFromArray',
+      value: function rgbaFromArray(a) {
+        return 'rgba(' + a[0] + ',' + a[1] + ',' + a[2] + ',' + a[3] + ')';
       }
-    }
+    }, {
+      key: 'rgbFromArray',
+      value: function rgbFromArray(a) {
+        return 'rgb(' + a[0] + ',' + a[1] + ',' + a[2] + ')';
+      }
+    }, {
+      key: 'setDimensions',
+      value: function setDimensions() {
+        this.canvas.height = this.height;
+        this.canvas.width = this.width;
+      }
+    }, {
+      key: 'validateColor',
+      value: function validateColor(color, placeholder) {
+        if ((typeof color === 'undefined' ? 'undefined' : _typeof(color)) === 'object' && color.length === 4) color.pop();
+        if ((typeof color === 'undefined' ? 'undefined' : _typeof(color)) === 'object' && color.length === 3) {
+          var validColor = [].concat(_toConsumableArray(color));
+          validColor.push(255);
+          return validColor;
+        } else if (placeholder) {
+          return [0, 0, 0, 255];
+        }
+        console.warn('Color was not valid!');
+        return null;
+      }
 
-    setDrawingColor(color) {
-      this.setBucketTool({ color });
-      this.setStrokeColor(color);
-    }
+      // Public APIs
 
-    setStrokeColor(color) {
-      this.strokeColor = this.validateColor(color, true);
-    }
+    }, {
+      key: 'on',
+      value: function on(event, callback) {
+        if (this.allowedEvents.includes(event)) {
+          this.canvas.addEventListener('cfd_' + event, function () {
+            return callback();
+          });
+        }
+      }
+    }, {
+      key: 'setLineWidth',
+      value: function setLineWidth(px) {
+        this.lineWidth = px;
+      }
+    }, {
+      key: 'setBackground',
+      value: function setBackground(color) {
+        var save = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
 
-    setBucketTool(params) {
-      const { color = null, tolerance = null } = params;
-      if (color) this.bucketToolColor = this.validateColor(color);
-      if (tolerance && tolerance > 0) this.bucketToolTolerance = tolerance;
-    }
+        var validColor = this.validateColor(color);
+        if (validColor) {
+          if (save) this.backgroundColor = validColor;
+          this.context.fillStyle = this.rgbaFromArray(validColor);
+          this.context.fillRect(0, 0, this.width, this.height);
+        }
+      }
+    }, {
+      key: 'setDrawingColor',
+      value: function setDrawingColor(color) {
+        this.setBucketTool({ color: color });
+        this.setStrokeColor(color);
+      }
+    }, {
+      key: 'setStrokeColor',
+      value: function setStrokeColor(color) {
+        this.strokeColor = this.validateColor(color, true);
+      }
+    }, {
+      key: 'setBucketTool',
+      value: function setBucketTool(params) {
+        var _params$color = params.color,
+            color = _params$color === undefined ? null : _params$color,
+            _params$tolerance = params.tolerance,
+            tolerance = _params$tolerance === undefined ? null : _params$tolerance;
 
-    toggleBucket() {
-      return (this.selectedBucket = !this.selectedBucket);
-    }
+        if (color) this.bucketToolColor = this.validateColor(color);
+        if (tolerance && tolerance > 0) this.bucketToolTolerance = tolerance;
+      }
+    }, {
+      key: 'toggleBucket',
+      value: function toggleBucket() {
+        return this.selectedBucket = !this.selectedBucket;
+      }
+    }, {
+      key: 'isBucketActive',
+      value: function isBucketActive() {
+        return this.selectedBucket;
+      }
+    }, {
+      key: 'clear',
+      value: function clear() {
+        this.context.clearRect(0, 0, this.width, this.height);
+        this.lastPath = null;
+        this.positions = [];
+        this.isDrawing = false;
+        this.setBackground(this.backgroundColor);
+      }
+    }, {
+      key: 'save',
+      value: function save() {
+        return this.canvas.toDataURL();
+      }
+    }, {
+      key: 'restore',
+      value: function restore(backup) {
+        var _this2 = this;
 
-    isBucketActive() {
-      return this.selectedBucket;
-    }
+        var image = new Image();
+        image.src = backup;
+        image.onload = function () {
+          _this2.imageRestored = true;
+          _this2.context.drawImage(image, 0, 0);
+        };
+      }
+    }]);
 
-    clear() {
-      this.context.clearRect(0, 0, this.width, this.height);
-      this.lastPath = null;
-      this.positions = [];
-      this.isDrawing = false;
-      this.setBackground(this.backgroundColor);
-    }
-
-    save() {
-      return this.canvas.toDataURL();
-    }
-
-    restore(backup) {
-      const image = new Image();
-      image.src = backup;
-      image.onload = () => {
-        this.imageRestored = true;
-        this.context.drawImage(image, 0, 0);
-      };
-    }
-  }
+    return CanvasFreeDrawing;
+  }();
 
   return CanvasFreeDrawing;
-});
+
+})));
+//# sourceMappingURL=canvas-free-drawing.js.map

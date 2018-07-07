@@ -46,6 +46,9 @@
 </head>
 
 <body>
+
+  <!-- This file is only for testing purpose -->
+
   <p>Canvas:</p>
   <canvas id="cfd"></canvas>
   <button id="clear">Clear canvas</button>
@@ -72,7 +75,7 @@
   <p id="redraw-count">0</p>
 
 </body>
-<script src="umd/canvas-free-drawing.js"></script>
+<script src="dist/canvas-free-drawing.min.js"></script>
 <script>
   const cfd = new CanvasFreeDrawing({ elementId: 'cfd', width: 500, height: 500 });
   const redrawCount = document.getElementById('redraw-count');
