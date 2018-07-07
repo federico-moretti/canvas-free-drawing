@@ -7,7 +7,7 @@
   "scripts": {
     "build:cjs": "babel src/index.js -o cjs/index.js",
     "build:umd": "rollup --config rollup.config.js",
-    "minify:umd": "minify dist/canvas-free-drawing.js -o dist/canvas-free-drawing.min.js",
+    "minify:umd": "minify umd/canvas-free-drawing.js -o umd/canvas-free-drawing.min.js",
     "prepare": "npm run build:cjs && npm run build:umd && npm run minify:umd"
   },
   "author": "Federico Moretti",
