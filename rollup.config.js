@@ -5,12 +5,12 @@
 import babel from 'rollup-plugin-babel';
 
 export default {
-  entry: 'src/index.js',
+  input: 'src/index.js',
   output: {
     file: 'dist/canvas-free-drawing.js',
     format: 'umd',
     name: 'CanvasFreeDrawing',
+    sourcemap: true,
   },
   plugins: [babel()],
-  sourceMap: true,
 };
