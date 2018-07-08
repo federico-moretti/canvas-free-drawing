@@ -2,10 +2,10 @@
   "name": "canvas-free-drawing",
   "version": "1.0.6",
   "description": "Simple, lightweight and straightforward package that allows you to free draw on a canvas html element.",
-  "main": "src/index.js",
-  "module": "cjs/index.js",
+  "main": "cjs/index.js",
+  "module": "src/index.js",
   "scripts": {
-    "build:cjs": "babel src/index.js -o cjs/index.js",
+    "build:cjs": "babel --plugins transform-es2015-modules-commonjs src/index.js -o cjs/index.js",
     "build:umd": "rollup --config rollup.config.js",
     "minify:umd": "minify umd/canvas-free-drawing.js -o umd/canvas-free-drawing.min.js",
     "prepare": "npm run build:cjs && npm run build:umd && npm run minify:umd"
@@ -22,6 +22,7 @@
   "devDependencies": {
     "babel-cli": "^6.26.0",
     "babel-minify": "^0.4.3",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.26.2",
     "babel-plugin-transform-es2015-modules-umd": "^6.24.1",
     "babel-preset-env": "^1.6.1",
     "babel-preset-minify": "^0.4.3",
