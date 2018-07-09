@@ -4,6 +4,7 @@ export default class CanvasFreeDrawing {
       elementId = this.requiredParam('elementId'),
       width = this.requiredParam('width'),
       height = this.requiredParam('height'),
+      backgroundColor = [255, 255, 255],
       lineWidth,
       strokeColor,
       disabled,
@@ -16,18 +17,22 @@ export default class CanvasFreeDrawing {
     this.width = width;
     this.height = height;
 
-    this.isDrawing = false;
-    this.lineWidth = lineWidth || 5;
-    this.bucketToolTolerance = 0;
     this.lastPath = null;
-    this.imageRestored = false;
     this.positions = [];
     this.leftCanvasDrawing = false; // to check if user left the canvas drawing, on mouseover resume drawing
-    this.selectedBucket = false;
-    this.allowedEvents = ['redraw', 'mouseup', 'mousedown', 'mouseenter', 'mouseleave'];
-    this.isCursorHidden = false;
+    this.isDrawing = false;
+    this.isDrawingModeEnabled = true;
+    this.imageRestored = false;
+
+    this.lineWidth = lineWidth || 5;
     this.strokeColor = this.validateColor(strokeColor, true);
     this.bucketToolColor = this.validateColor(strokeColor, true);
+    this.bucketToolTolerance = 0;
+    this.isBucketToolEnabled = false;
+
+    this.allowedEvents = ['redraw', 'mouseup', 'mousedown', 'mouseenter', 'mouseleave'];
+    this.redrawCounter = 0;
+    this.dispatchEventsOnceEvery = 0; // this may become something like: [{event, counter}]
 
     // initialize events
     this.redrawEvent = new Event('cfd_redraw');
@@ -44,11 +49,9 @@ export default class CanvasFreeDrawing {
     this.mouseUpDocument = this.mouseUpDocument.bind(this);
 
     this.setDimensions();
-    this.setBackground([255, 255, 255]);
+    this.setBackground(backgroundColor);
 
-    if (!disabled) {
-      this.enableDrawing();
-    }
+    if (!disabled) this.enableDrawingMode();
   }
 
   requiredParam(param) {
@@ -79,21 +82,25 @@ export default class CanvasFreeDrawing {
     document.removeEventListener('mouseUp', this.mouseUpDocument);
   }
 
-  enableDrawing() {
+  enableDrawingMode() {
     this.addListeners();
     this.toggleCursor();
+    this.isDrawingModeEnabled = true;
+    return this.isDrawingModeEnabled;
   }
 
-  disableDrawing() {
+  disableDrawingMode() {
     this.removeListeners();
     this.toggleCursor();
+    this.isDrawingModeEnabled = false;
+    return this.isDrawingModeEnabled;
   }
 
   mouseDown(event) {
     if (event.button !== 0) return;
     const x = event.pageX - this.canvas.offsetLeft;
     const y = event.pageY - this.canvas.offsetTop;
-    if (this.selectedBucket) {
+    if (this.isBucketToolEnabled) {
       this.fill(x, y, this.bucketToolColor, this.bucketToolTolerance);
       return;
     }
@@ -115,7 +122,7 @@ export default class CanvasFreeDrawing {
       const x = event.pageX - this.canvas.offsetLeft;
       const y = event.pageY - this.canvas.offsetTop;
       this.storeDrawing(x, y, true);
-      this.redraw();
+      this.redraw(false, this.dispatchEventsOnceEvery);
     }
   }
 
@@ -150,7 +157,7 @@ export default class CanvasFreeDrawing {
     return this.positions.push({ x, y, moving });
   }
 
-  redraw(all) {
+  redraw(all, dispatchEventsOnceEvery) {
     this.context.strokeStyle = this.rgbaFromArray(this.strokeColor);
     this.context.lineJoin = 'round';
     this.context.lineWidth = this.lineWidth;
@@ -175,7 +182,12 @@ export default class CanvasFreeDrawing {
       this.context.stroke();
     });
 
-    this.canvas.dispatchEvent(this.redrawEvent);
+    if (!dispatchEventsOnceEvery) {
+      this.canvas.dispatchEvent(this.redrawEvent);
+    } else if (this.redrawCounter % dispatchEventsOnceEvery === 0) {
+      this.canvas.dispatchEvent(this.redrawEvent);
+    }
+    this.redrawCounter += 1;
   }
 
   // https://en.wikipedia.org/wiki/Flood_fill
@@ -184,7 +196,6 @@ export default class CanvasFreeDrawing {
       this.setBackground(newColor, false);
       return;
     }
-    if (typeof newColor != 'object') throw new Error('New color must be an array like: [255, 255, 255, 255]');
     const imageData = this.context.getImageData(0, 0, this.width, this.height);
     const data = imageData.data;
     const nodeColor = this.getNodeColor(x, y, data);
@@ -276,15 +287,22 @@ export default class CanvasFreeDrawing {
     } else if (placeholder) {
       return [0, 0, 0, 255];
     }
-    console.warn('Color was not valid!');
+    console.warn('Color is not valid! It must be an array with RGB values:  [0-255, 0-255, 0-255]');
     return null;
   }
 
   // Public APIs
 
-  on(event, callback) {
+  on(params, callback) {
+    const { event = this.requiredParam('event'), counter } = params;
+
     if (this.allowedEvents.includes(event)) {
+      if (event === 'redraw' && Number.isInteger(counter)) {
+        this.dispatchEventsOnceEvery = parseInt(counter);
+      }
       this.canvas.addEventListener('cfd_' + event, () => callback());
+    } else {
+      console.warn(`This event is not allowed: ${event}`);
     }
   }
 
@@ -302,7 +320,7 @@ export default class CanvasFreeDrawing {
   }
 
   setDrawingColor(color) {
-    this.setBucketTool({ color });
+    this.configBucketTool({ color });
     this.setStrokeColor(color);
   }
 
@@ -310,18 +328,26 @@ export default class CanvasFreeDrawing {
     this.strokeColor = this.validateColor(color, true);
   }
 
-  setBucketTool(params) {
+  configBucketTool(params) {
     const { color = null, tolerance = null } = params;
     if (color) this.bucketToolColor = this.validateColor(color);
     if (tolerance && tolerance > 0) this.bucketToolTolerance = tolerance;
   }
 
-  toggleBucket() {
-    return (this.selectedBucket = !this.selectedBucket);
+  toggleBucketTool() {
+    return (this.isBucketToolEnabled = !this.isBucketToolEnabled);
   }
 
-  isBucketActive() {
-    return this.selectedBucket;
+  isBucketToolEnabled() {
+    return this.isBucketToolEnabled;
+  }
+
+  toggleDrawingMode() {
+    return this.isDrawingModeEnabled ? this.disableDrawingMode() : this.enableDrawingMode();
+  }
+
+  isDrawingModeEnabled() {
+    return this.isDrawingModeEnabled;
   }
 
   clear() {

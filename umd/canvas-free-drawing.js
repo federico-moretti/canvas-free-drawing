@@ -24,6 +24,8 @@
           width = _params$width === undefined ? this.requiredParam('width') : _params$width,
           _params$height = params.height,
           height = _params$height === undefined ? this.requiredParam('height') : _params$height,
+          _params$backgroundCol = params.backgroundColor,
+          backgroundColor = _params$backgroundCol === undefined ? [255, 255, 255] : _params$backgroundCol,
           lineWidth = params.lineWidth,
           strokeColor = params.strokeColor,
           disabled = params.disabled;
@@ -36,18 +38,22 @@
       this.width = width;
       this.height = height;
 
-      this.isDrawing = false;
-      this.lineWidth = lineWidth || 5;
-      this.bucketToolTolerance = 0;
       this.lastPath = null;
-      this.imageRestored = false;
       this.positions = [];
       this.leftCanvasDrawing = false; // to check if user left the canvas drawing, on mouseover resume drawing
-      this.selectedBucket = false;
-      this.allowedEvents = ['redraw', 'mouseup', 'mousedown', 'mouseenter', 'mouseleave'];
-      this.isCursorHidden = false;
+      this.isDrawing = false;
+      this.isDrawingModeEnabled = true;
+      this.imageRestored = false;
+
+      this.lineWidth = lineWidth || 5;
       this.strokeColor = this.validateColor(strokeColor, true);
       this.bucketToolColor = this.validateColor(strokeColor, true);
+      this.bucketToolTolerance = 0;
+      this.isBucketToolEnabled = false;
+
+      this.allowedEvents = ['redraw', 'mouseup', 'mousedown', 'mouseenter', 'mouseleave'];
+      this.redrawCounter = 0;
+      this.dispatchEventsOnceEvery = 0; // this may become something like: [{event, counter}]
 
       // initialize events
       this.redrawEvent = new Event('cfd_redraw');
@@ -64,11 +70,9 @@
       this.mouseUpDocument = this.mouseUpDocument.bind(this);
 
       this.setDimensions();
-      this.setBackground([255, 255, 255]);
+      this.setBackground(backgroundColor);
 
-      if (!disabled) {
-        this.enableDrawing();
-      }
+      if (!disabled) this.enableDrawingMode();
     }
 
     _createClass(CanvasFreeDrawing, [{
@@ -104,16 +108,20 @@
         document.removeEventListener('mouseUp', this.mouseUpDocument);
       }
     }, {
-      key: 'enableDrawing',
-      value: function enableDrawing() {
+      key: 'enableDrawingMode',
+      value: function enableDrawingMode() {
         this.addListeners();
         this.toggleCursor();
+        this.isDrawingModeEnabled = true;
+        return this.isDrawingModeEnabled;
       }
     }, {
-      key: 'disableDrawing',
-      value: function disableDrawing() {
+      key: 'disableDrawingMode',
+      value: function disableDrawingMode() {
         this.removeListeners();
         this.toggleCursor();
+        this.isDrawingModeEnabled = false;
+        return this.isDrawingModeEnabled;
       }
     }, {
       key: 'mouseDown',
@@ -121,7 +129,7 @@
         if (event.button !== 0) return;
         var x = event.pageX - this.canvas.offsetLeft;
         var y = event.pageY - this.canvas.offsetTop;
-        if (this.selectedBucket) {
+        if (this.isBucketToolEnabled) {
           this.fill(x, y, this.bucketToolColor, this.bucketToolTolerance);
           return;
         }
@@ -144,7 +152,7 @@
           var x = event.pageX - this.canvas.offsetLeft;
           var y = event.pageY - this.canvas.offsetTop;
           this.storeDrawing(x, y, true);
-          this.redraw();
+          this.redraw(false, this.dispatchEventsOnceEvery);
         }
       }
     }, {
@@ -186,7 +194,7 @@
       }
     }, {
       key: 'redraw',
-      value: function redraw(all) {
+      value: function redraw(all, dispatchEventsOnceEvery) {
         var _this = this;
 
         this.context.strokeStyle = this.rgbaFromArray(this.strokeColor);
@@ -217,7 +225,12 @@
           _this.context.stroke();
         });
 
-        this.canvas.dispatchEvent(this.redrawEvent);
+        if (!dispatchEventsOnceEvery) {
+          this.canvas.dispatchEvent(this.redrawEvent);
+        } else if (this.redrawCounter % dispatchEventsOnceEvery === 0) {
+          this.canvas.dispatchEvent(this.redrawEvent);
+        }
+        this.redrawCounter += 1;
       }
 
       // https://en.wikipedia.org/wiki/Flood_fill
@@ -229,7 +242,6 @@
           this.setBackground(newColor, false);
           return;
         }
-        if ((typeof newColor === 'undefined' ? 'undefined' : _typeof(newColor)) != 'object') throw new Error('New color must be an array like: [255, 255, 255, 255]');
         var imageData = this.context.getImageData(0, 0, this.width, this.height);
         var data = imageData.data;
         var nodeColor = this.getNodeColor(x, y, data);
@@ -326,7 +338,7 @@
         } else if (placeholder) {
           return [0, 0, 0, 255];
         }
-        console.warn('Color was not valid!');
+        console.warn('Color is not valid! It must be an array with RGB values:  [0-255, 0-255, 0-255]');
         return null;
       }
 
@@ -334,11 +346,21 @@
 
     }, {
       key: 'on',
-      value: function on(event, callback) {
+      value: function on(params, callback) {
+        var _params$event = params.event,
+            event = _params$event === undefined ? this.requiredParam('event') : _params$event,
+            counter = params.counter;
+
+
         if (this.allowedEvents.includes(event)) {
+          if (event === 'redraw' && Number.isInteger(counter)) {
+            this.dispatchEventsOnceEvery = parseInt(counter);
+          }
           this.canvas.addEventListener('cfd_' + event, function () {
             return callback();
           });
+        } else {
+          console.warn('This event is not allowed: ' + event);
         }
       }
     }, {
@@ -361,7 +383,7 @@
     }, {
       key: 'setDrawingColor',
       value: function setDrawingColor(color) {
-        this.setBucketTool({ color: color });
+        this.configBucketTool({ color: color });
         this.setStrokeColor(color);
       }
     }, {
@@ -370,8 +392,8 @@
         this.strokeColor = this.validateColor(color, true);
       }
     }, {
-      key: 'setBucketTool',
-      value: function setBucketTool(params) {
+      key: 'configBucketTool',
+      value: function configBucketTool(params) {
         var _params$color = params.color,
             color = _params$color === undefined ? null : _params$color,
             _params$tolerance = params.tolerance,
@@ -381,14 +403,24 @@
         if (tolerance && tolerance > 0) this.bucketToolTolerance = tolerance;
       }
     }, {
-      key: 'toggleBucket',
-      value: function toggleBucket() {
-        return this.selectedBucket = !this.selectedBucket;
+      key: 'toggleBucketTool',
+      value: function toggleBucketTool() {
+        return this.isBucketToolEnabled = !this.isBucketToolEnabled;
       }
     }, {
-      key: 'isBucketActive',
-      value: function isBucketActive() {
-        return this.selectedBucket;
+      key: 'isBucketToolEnabled',
+      value: function isBucketToolEnabled() {
+        return this.isBucketToolEnabled;
+      }
+    }, {
+      key: 'toggleDrawingMode',
+      value: function toggleDrawingMode() {
+        return this.isDrawingModeEnabled ? this.disableDrawingMode() : this.enableDrawingMode();
+      }
+    }, {
+      key: 'isDrawingModeEnabled',
+      value: function isDrawingModeEnabled() {
+        return this.isDrawingModeEnabled;
       }
     }, {
       key: 'clear',

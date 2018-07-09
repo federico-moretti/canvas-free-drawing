@@ -58,6 +58,7 @@ Initialize the module.
 - **height**: integer
 - lineWidth: integer
 - strokeColor: array(3)
+- backgroundColor: array(3)
 
 #### `setLineWidth(pixels: integer)`
 
@@ -69,32 +70,42 @@ Set line color
 
 #### `setDrawingColor(color: array(3))`
 
-Set both bucket and line color
+Set both bucket tool color and line color
 
 #### `setBackground(color: array(3))`
 
 Set background color
 
-#### `setBucketTool(params: object)`
+#### `toggleDrawingMode(): boolean`
+
+Toggle drawing mode, which allows to draw on the canvas. Returns the state
+
+You can also use `enableDrawingMode()` and `disableDrawingMode()`.
+
+#### `isDrawingModeEnabled: boolean`
+
+Check if drawing mode is enabled
+
+#### `configBucketTool(params: object)`
 
 Set bucket tool parameters.
 
 - color: array(3)
 - tolerance: integer
 
-#### `toggleBucket: boolean`
+#### `toggleBucketTool(): boolean`
 
-Toggle bucket tool, returns the state
+Toggle bucket tool. Returns the state
 
-#### `isBucketActive: boolean`
+#### `isBucketToolEnabled: boolean`
 
-Check if bucket tool is active
+Check if bucket tool is enabled
 
-#### `clear`
+#### `clear()`
 
 Clear the canvas
 
-#### `save: string`
+#### `save(): string`
 
 Save the canvas as base64 and returns a string - this method uses the native method toDataURL()
 
@@ -102,13 +113,13 @@ Save the canvas as base64 and returns a string - this method uses the native met
 
 Restore the canvas from the string previously saved
 
-### Notes:
+### Notes
 
-Colors must be set with an array indicating the RGB values: [0-255, 0-255, 0-255].
+Colors must be set with an array with RGB values: [0-255, 0-255, 0-255].
 
 ### Events
 
-Subscribe to an event emitter, the callback will be called everytime the event gets called.
+Subscribe to an event emitter, the callback will be called when the event gets called.
 
 These are the events allowed:
 
@@ -118,9 +129,16 @@ These are the events allowed:
 - mouseenter
 - mouseleave
 
+Some events (only `redraw` at the moment) also allow you to set a timeout counter so that the event will trigger instead of everytime, once every 10 times for example.
+
+#### `on(params: object, callback)`
+
+- **event**: string
+- counter: integer
+
 ```js
-cfd.on('redraw', () => {
-  console.log('canvas did redraw');
+cfd.on({ event: 'redraw', counter: 10 }, () => {
+  console.log('Canvas did redraw!');
 });
 ```
 
