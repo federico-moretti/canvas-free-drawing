@@ -41,7 +41,7 @@ Basic usage:
   cfd.setStrokeColor([0, 0, 255]); // in RGB
 
   // listen to events
-  cfd.on('redraw', () => {
+  cfd.on({ event: 'redraw' }, () => {
     console.log('canvas did redraw');
   });
 </script>
