@@ -110,17 +110,17 @@
     }, {
       key: 'enableDrawingMode',
       value: function enableDrawingMode() {
+        this.isDrawingModeEnabled = true;
         this.addListeners();
         this.toggleCursor();
-        this.isDrawingModeEnabled = true;
         return this.isDrawingModeEnabled;
       }
     }, {
       key: 'disableDrawingMode',
       value: function disableDrawingMode() {
+        this.isDrawingModeEnabled = false;
         this.removeListeners();
         this.toggleCursor();
-        this.isDrawingModeEnabled = false;
         return this.isDrawingModeEnabled;
       }
     }, {
@@ -181,11 +181,7 @@
     }, {
       key: 'toggleCursor',
       value: function toggleCursor() {
-        if (this.canvas.style.cursor === 'crosshair') {
-          this.canvas.style.cursor = 'auto';
-        } else {
-          this.canvas.style.cursor = 'crosshair';
-        }
+        this.canvas.style.cursor = this.isDrawingModeEnabled ? 'crosshair' : 'auto';
       }
     }, {
       key: 'storeDrawing',
@@ -202,12 +198,9 @@
         this.context.lineWidth = this.lineWidth;
 
         var position = [];
-
-        if (all) {
-          position = this.positions;
-        } else {
-          position = this.positions.slice(this.lastPath);
-        }
+        // if all is true it redraws all the positions, else redraw from last click on the canvas
+        // this is to reduce the the canvas redraws but also being able to redraw everything if neened
+        position = all ? this.positions : this.positions.slice(this.lastPath);
 
         position.forEach(function (_ref, i) {
           var x = _ref.x,
