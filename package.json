@@ -5,12 +5,13 @@
   "main": "cjs/index.js",
   "module": "src/index.js",
   "scripts": {
-    "dev": "nodemon --watch src/index.js --exec yarn build:umd",
-    "test": "jest --verbose --coverage --watchAll",
+    "dev:build": "nodemon --watch src/index.js --exec yarn build:umd",
+    "dev:test": "jest --verbose --coverage --watchAll",
     "build:cjs": "babel --plugins transform-es2015-modules-commonjs src/index.js -o cjs/index.js",
     "build:umd": "rollup --config rollup.config.js",
     "minify:umd": "minify umd/canvas-free-drawing.js -o umd/canvas-free-drawing.min.js",
-    "prepare": "npm run build:cjs && npm run build:umd && npm run minify:umd"
+    "test": "jest",
+    "prepare": "npm run test && npm run build:cjs && npm run build:umd && npm run minify:umd"
   },
   "author": "Federico Moretti",
   "license": "MIT",
@@ -29,6 +30,7 @@
     "babel-plugin-transform-es2015-modules-umd": "^6.24.1",
     "babel-preset-env": "^1.6.1",
     "babel-preset-minify": "^0.4.3",
+    "canvas": "^1.6.11",
     "jest": "^23.5.0",
     "jest-canvas-mock": "^1.1.0",
     "rollup": "^0.62.0"
