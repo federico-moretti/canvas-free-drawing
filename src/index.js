@@ -122,7 +122,7 @@ export default class CanvasFreeDrawing {
       const x = event.pageX - this.canvas.offsetLeft;
       const y = event.pageY - this.canvas.offsetTop;
       this.storeDrawing(x, y, true);
-      this.redraw(false, this.dispatchEventsOnceEvery);
+      this.redraw(this.dispatchEventsOnceEvery);
     }
   }
 
@@ -153,20 +153,16 @@ export default class CanvasFreeDrawing {
     return this.positions.push({ x, y, moving });
   }
 
-  redraw(all, dispatchEventsOnceEvery) {
+  redraw(dispatchEventsOnceEvery) {
     this.context.strokeStyle = this.rgbaFromArray(this.strokeColor);
     this.context.lineJoin = 'round';
     this.context.lineWidth = this.lineWidth;
 
-    let position = [];
-    // if all is true it redraws all the positions, else redraw from last click on the canvas
-    // this is to reduce the the canvas redraws but also being able to redraw everything if neened
-    position = all ? this.positions : this.positions.slice(this.lastPath);
-
-    position.forEach(({ x, y, moving }, i) => {
+    const positions = [...this.positions].slice(this.lastPath);
+    positions.forEach(({ x, y, moving }, i) => {
       this.context.beginPath();
       if (moving && i) {
-        this.context.moveTo(position[i - 1]['x'], position[i - 1]['y']);
+        this.context.moveTo(positions[i - 1]['x'], positions[i - 1]['y']);
       } else {
         this.context.moveTo(x - 1, y);
       }
@@ -184,7 +180,7 @@ export default class CanvasFreeDrawing {
   }
 
   // https://en.wikipedia.org/wiki/Flood_fill
-  fill(x, y, newColor, tolerance) {
+  fill(x, y, newColor, tolerance, callback) {
     if (this.positions.length === 0 && !this.imageRestored) {
       this.setBackground(newColor, false);
       return;
@@ -230,6 +226,8 @@ export default class CanvasFreeDrawing {
 
     this.context.putImageData(imageData, 0, 0);
     this.canvas.dispatchEvent(this.redrawEvent);
+
+    if (typeof callback === 'function') callback();
   }
 
   // i = color 1; j = color 2; t = tolerance
@@ -251,6 +249,7 @@ export default class CanvasFreeDrawing {
   }
 
   setNodeColor(x, y, color, data) {
+    color = this.validateColor(color);
     const i = (x + y * this.width) * 4;
     data[i] = color[0];
     data[i + 1] = color[1];
@@ -355,12 +354,13 @@ export default class CanvasFreeDrawing {
     return this.canvas.toDataURL();
   }
 
-  restore(backup) {
+  restore(backup, callback) {
     const image = new Image();
     image.src = backup;
     image.onload = () => {
       this.imageRestored = true;
       this.context.drawImage(image, 0, 0);
+      if (typeof callback === 'function') callback();
     };
   }
 }

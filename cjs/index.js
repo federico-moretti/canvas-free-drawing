@@ -152,7 +152,7 @@ var CanvasFreeDrawing = function () {
         var x = event.pageX - this.canvas.offsetLeft;
         var y = event.pageY - this.canvas.offsetTop;
         this.storeDrawing(x, y, true);
-        this.redraw(false, this.dispatchEventsOnceEvery);
+        this.redraw(this.dispatchEventsOnceEvery);
       }
     }
   }, {
@@ -190,26 +190,22 @@ var CanvasFreeDrawing = function () {
     }
   }, {
     key: 'redraw',
-    value: function redraw(all, dispatchEventsOnceEvery) {
+    value: function redraw(dispatchEventsOnceEvery) {
       var _this = this;
 
       this.context.strokeStyle = this.rgbaFromArray(this.strokeColor);
       this.context.lineJoin = 'round';
       this.context.lineWidth = this.lineWidth;
 
-      var position = [];
-      // if all is true it redraws all the positions, else redraw from last click on the canvas
-      // this is to reduce the the canvas redraws but also being able to redraw everything if neened
-      position = all ? this.positions : this.positions.slice(this.lastPath);
-
-      position.forEach(function (_ref, i) {
+      var positions = [].concat(_toConsumableArray(this.positions)).slice(this.lastPath);
+      positions.forEach(function (_ref, i) {
         var x = _ref.x,
             y = _ref.y,
             moving = _ref.moving;
 
         _this.context.beginPath();
         if (moving && i) {
-          _this.context.moveTo(position[i - 1]['x'], position[i - 1]['y']);
+          _this.context.moveTo(positions[i - 1]['x'], positions[i - 1]['y']);
         } else {
           _this.context.moveTo(x - 1, y);
         }
@@ -230,7 +226,7 @@ var CanvasFreeDrawing = function () {
 
   }, {
     key: 'fill',
-    value: function fill(x, y, newColor, tolerance) {
+    value: function fill(x, y, newColor, tolerance, callback) {
       if (this.positions.length === 0 && !this.imageRestored) {
         this.setBackground(newColor, false);
         return;
@@ -276,6 +272,8 @@ var CanvasFreeDrawing = function () {
 
       this.context.putImageData(imageData, 0, 0);
       this.canvas.dispatchEvent(this.redrawEvent);
+
+      if (typeof callback === 'function') callback();
     }
 
     // i = color 1; j = color 2; t = tolerance
@@ -298,6 +296,7 @@ var CanvasFreeDrawing = function () {
   }, {
     key: 'setNodeColor',
     value: function setNodeColor(x, y, color, data) {
+      color = this.validateColor(color);
       var i = (x + y * this.width) * 4;
       data[i] = color[0];
       data[i + 1] = color[1];
@@ -431,7 +430,7 @@ var CanvasFreeDrawing = function () {
     }
   }, {
     key: 'restore',
-    value: function restore(backup) {
+    value: function restore(backup, callback) {
       var _this2 = this;
 
       var image = new Image();
@@ -439,6 +438,7 @@ var CanvasFreeDrawing = function () {
       image.onload = function () {
         _this2.imageRestored = true;
         _this2.context.drawImage(image, 0, 0);
+        if (typeof callback === 'function') callback();
       };
     }
   }]);
