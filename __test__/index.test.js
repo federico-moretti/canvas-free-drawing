@@ -101,6 +101,18 @@ describe('CanvasFreeDrawing', () => {
     const event = { button: 0, pageX: 10, pageY: 10 };
     cfd.setDrawingColor([255, 0, 0]);
     cfd.mouseDown(event);
+    cfd.mouseUp();
+
+    const color = getNodeColor(10, 10, cfd);
+    expect(cfd.positions[0]).toEqual({ moving: false, x: 10, y: 10 });
+    expect(color).toEqual([255, 0, 0, 255]);
+  });
+
+  it('draw a red point with touch', () => {
+    const event = { changedTouches: [{ pageX: 10, pageY: 10 }] };
+    cfd.setDrawingColor([255, 0, 0]);
+    cfd.touchStart(event);
+    cfd.touchEnd();
 
     const color = getNodeColor(10, 10, cfd);
     expect(cfd.positions[0]).toEqual({ moving: false, x: 10, y: 10 });
@@ -112,6 +124,20 @@ describe('CanvasFreeDrawing', () => {
     const event2 = { button: 0, pageX: 15, pageY: 15 };
     cfd.mouseDown(event1);
     cfd.mouseMove(event2);
+    cfd.mouseUp();
+
+    const color = getNodeColor(15, 15, cfd);
+    expect(cfd.positions[0]).toEqual({ moving: false, x: 10, y: 10 });
+    expect(cfd.positions[1]).toEqual({ moving: true, x: 15, y: 15 });
+    expect(color).toEqual([0, 0, 0, 255]);
+  });
+
+  it('draw a black line with touch', () => {
+    const event1 = { changedTouches: [{ pageX: 10, pageY: 10 }] };
+    const event2 = { changedTouches: [{ pageX: 15, pageY: 15 }] };
+    cfd.touchStart(event1);
+    cfd.touchMove(event2);
+    cfd.touchEnd();
 
     const color = getNodeColor(15, 15, cfd);
     expect(cfd.positions[0]).toEqual({ moving: false, x: 10, y: 10 });

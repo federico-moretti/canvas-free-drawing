@@ -10,6 +10,7 @@ You can try it [here](https://fmoretti.com/canvas-free-drawing)!
 - Simplify canvas APIs
 - Bucket tool
 - Events
+- Touch support
 
 ## Installing
 

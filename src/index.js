@@ -30,6 +30,7 @@ export default class CanvasFreeDrawing {
     this.bucketToolTolerance = 0;
     this.isBucketToolEnabled = false;
 
+    this.listenersList = ['mouseDown', 'mouseMove', 'mouseLeave', 'mouseUp', 'touchStart', 'touchMove', 'touchEnd'];
     this.allowedEvents = ['redraw', 'mouseup', 'mousedown', 'mouseenter', 'mouseleave'];
     this.redrawCounter = 0;
     this.dispatchEventsOnceEvery = 0; // this may become something like: [{event, counter}]
@@ -40,6 +41,8 @@ export default class CanvasFreeDrawing {
     this.mouseDownEvent = new Event('cfd_mousedown');
     this.mouseEnterEvent = new Event('cfd_mouseenter');
     this.mouseLeaveEvent = new Event('cfd_mouseleave');
+    this.touchStartEvent = new Event('cfd_touchstart');
+    this.touchEndEvent = new Event('cfd_touchend');
 
     // these are needed to remove the listener
     this.mouseDown = this.mouseDown.bind(this);
@@ -47,6 +50,13 @@ export default class CanvasFreeDrawing {
     this.mouseLeave = this.mouseLeave.bind(this);
     this.mouseUp = this.mouseUp.bind(this);
     this.mouseUpDocument = this.mouseUpDocument.bind(this);
+    this.touchStart = this.touchStart.bind(this);
+    this.touchMove = this.touchMove.bind(this);
+    this.touchEnd = this.touchEnd.bind(this);
+
+    this.touchIdentifier = null;
+    this.previousX = null;
+    this.previousY = null;
 
     this.setDimensions();
     this.setBackground(backgroundColor);
@@ -67,19 +77,17 @@ export default class CanvasFreeDrawing {
   }
 
   addListeners() {
-    this.canvas.addEventListener('mousedown', this.mouseDown);
-    this.canvas.addEventListener('mousemove', this.mouseMove);
-    this.canvas.addEventListener('mouseleave', this.mouseLeave);
-    this.canvas.addEventListener('mouseup', this.mouseUp);
+    this.listenersList.forEach(event => {
+      this.canvas.addEventListener(event.toLowerCase(), this[event]);
+    });
     document.addEventListener('mouseup', this.mouseUpDocument);
   }
 
   removeListeners() {
-    this.canvas.removeEventListener('mousedown', this.mouseDown);
-    this.canvas.removeEventListener('mouseMove', this.mouseMove);
-    this.canvas.removeEventListener('mouseLeave', this.mouseLeave);
-    this.canvas.removeEventListener('mouseUp', this.mouseUp);
-    document.removeEventListener('mouseUp', this.mouseUpDocument);
+    this.listenersList.forEach(event => {
+      this.canvas.removeEventListener(event.toLowerCase(), this[event]);
+    });
+    document.removeEventListener('mouseup', this.mouseUpDocument);
   }
 
   enableDrawingMode() {
@@ -100,30 +108,43 @@ export default class CanvasFreeDrawing {
     if (event.button !== 0) return;
     const x = event.pageX - this.canvas.offsetLeft;
     const y = event.pageY - this.canvas.offsetTop;
-    if (this.isBucketToolEnabled) {
-      this.fill(x, y, this.bucketToolColor, this.bucketToolTolerance);
-      return;
-    }
-    this.isDrawing = true;
-    const lenght = this.storeDrawing(x, y, false);
-    this.lastPath = lenght - 1; // index last new path
-
-    this.canvas.dispatchEvent(this.mouseDownEvent);
-
-    this.redraw();
+    this.drawPoint(x, y);
   }
 
   mouseMove(event) {
-    if (this.leftCanvasDrawing) {
-      this.leftCanvasDrawing = false;
-      this.mouseDown(event);
+    const x = event.pageX - this.canvas.offsetLeft;
+    const y = event.pageY - this.canvas.offsetTop;
+    this.drawLine(x, y);
+  }
+
+  touchStart(event) {
+    if (event.changedTouches.length > 0) {
+      const { pageX, pageY, identifier } = event.changedTouches[0];
+      const x = pageX - this.canvas.offsetLeft;
+      const y = pageY - this.canvas.offsetTop;
+      this.touchIdentifier = identifier;
+      this.drawPoint(x, y);
     }
-    if (this.isDrawing) {
-      const x = event.pageX - this.canvas.offsetLeft;
-      const y = event.pageY - this.canvas.offsetTop;
-      this.storeDrawing(x, y, true);
-      this.redraw(this.dispatchEventsOnceEvery);
+  }
+
+  touchMove(event) {
+    if (event.changedTouches.length > 0) {
+      const { pageX, pageY, identifier } = event.changedTouches[0];
+      const x = pageX - this.canvas.offsetLeft;
+      const y = pageY - this.canvas.offsetTop;
+
+      // check if is multi touch, if it is do nothing
+      if (identifier != this.touchIdentifier) return;
+
+      this.previousX = x;
+      this.previousY = y;
+      this.drawLine(x, y);
     }
+  }
+
+  touchEnd() {
+    this.isDrawing = false;
+    this.canvas.dispatchEvent(this.touchEndEvent);
   }
 
   mouseUp() {
@@ -145,12 +166,30 @@ export default class CanvasFreeDrawing {
     this.canvas.dispatchEvent(this.mouseEnterEvent);
   }
 
-  toggleCursor() {
-    this.canvas.style.cursor = this.isDrawingModeEnabled ? 'crosshair' : 'auto';
+  drawPoint(x, y) {
+    if (this.isBucketToolEnabled) {
+      this.fill(x, y, this.bucketToolColor, this.bucketToolTolerance);
+      return;
+    }
+    this.isDrawing = true;
+    const length = this.storeDrawing(x, y, false);
+    this.lastPath = length - 1; // index last new path
+
+    this.canvas.dispatchEvent(this.mouseDownEvent);
+
+    this.redraw();
   }
 
-  storeDrawing(x, y, moving) {
-    return this.positions.push({ x, y, moving });
+  drawLine(x, y) {
+    if (this.leftCanvasDrawing) {
+      this.leftCanvasDrawing = false;
+      this.mouseDown(event);
+    }
+
+    if (this.isDrawing) {
+      this.storeDrawing(x, y, true);
+      this.redraw(this.dispatchEventsOnceEvery);
+    }
   }
 
   redraw(dispatchEventsOnceEvery) {
@@ -181,6 +220,7 @@ export default class CanvasFreeDrawing {
 
   // https://en.wikipedia.org/wiki/Flood_fill
   fill(x, y, newColor, tolerance, callback) {
+    newColor = this.validateColor(newColor);
     if (this.positions.length === 0 && !this.imageRestored) {
       this.setBackground(newColor, false);
       return;
@@ -230,6 +270,19 @@ export default class CanvasFreeDrawing {
     if (typeof callback === 'function') callback();
   }
 
+  validateColor(color, placeholder) {
+    if (typeof color === 'object' && color.length === 4) color.pop();
+    if (typeof color === 'object' && color.length === 3) {
+      const validColor = [...color];
+      validColor.push(255);
+      return validColor;
+    } else if (placeholder) {
+      return [0, 0, 0, 255];
+    }
+    console.warn('Color is not valid! It must be an array with RGB values:  [0-255, 0-255, 0-255]');
+    return null;
+  }
+
   // i = color 1; j = color 2; t = tolerance
   isNodeColorEqual(i, j, t) {
     if (t) {
@@ -249,7 +302,6 @@ export default class CanvasFreeDrawing {
   }
 
   setNodeColor(x, y, color, data) {
-    color = this.validateColor(color);
     const i = (x + y * this.width) * 4;
     data[i] = color[0];
     data[i + 1] = color[1];
@@ -270,17 +322,12 @@ export default class CanvasFreeDrawing {
     this.canvas.width = this.width;
   }
 
-  validateColor(color, placeholder) {
-    if (typeof color === 'object' && color.length === 4) color.pop();
-    if (typeof color === 'object' && color.length === 3) {
-      const validColor = [...color];
-      validColor.push(255);
-      return validColor;
-    } else if (placeholder) {
-      return [0, 0, 0, 255];
-    }
-    console.warn('Color is not valid! It must be an array with RGB values:  [0-255, 0-255, 0-255]');
-    return null;
+  toggleCursor() {
+    this.canvas.style.cursor = this.isDrawingModeEnabled ? 'crosshair' : 'auto';
+  }
+
+  storeDrawing(x, y, moving) {
+    return this.positions.push({ x, y, moving });
   }
 
   // Public APIs

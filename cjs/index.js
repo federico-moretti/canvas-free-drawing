@@ -51,6 +51,7 @@ var CanvasFreeDrawing = function () {
     this.bucketToolTolerance = 0;
     this.isBucketToolEnabled = false;
 
+    this.listenersList = ['mouseDown', 'mouseMove', 'mouseLeave', 'mouseUp', 'touchStart', 'touchMove', 'touchEnd'];
     this.allowedEvents = ['redraw', 'mouseup', 'mousedown', 'mouseenter', 'mouseleave'];
     this.redrawCounter = 0;
     this.dispatchEventsOnceEvery = 0; // this may become something like: [{event, counter}]
@@ -61,6 +62,8 @@ var CanvasFreeDrawing = function () {
     this.mouseDownEvent = new Event('cfd_mousedown');
     this.mouseEnterEvent = new Event('cfd_mouseenter');
     this.mouseLeaveEvent = new Event('cfd_mouseleave');
+    this.touchStartEvent = new Event('cfd_touchstart');
+    this.touchEndEvent = new Event('cfd_touchend');
 
     // these are needed to remove the listener
     this.mouseDown = this.mouseDown.bind(this);
@@ -68,6 +71,13 @@ var CanvasFreeDrawing = function () {
     this.mouseLeave = this.mouseLeave.bind(this);
     this.mouseUp = this.mouseUp.bind(this);
     this.mouseUpDocument = this.mouseUpDocument.bind(this);
+    this.touchStart = this.touchStart.bind(this);
+    this.touchMove = this.touchMove.bind(this);
+    this.touchEnd = this.touchEnd.bind(this);
+
+    this.touchIdentifier = null;
+    this.previousX = null;
+    this.previousY = null;
 
     this.setDimensions();
     this.setBackground(backgroundColor);
@@ -92,20 +102,22 @@ var CanvasFreeDrawing = function () {
   }, {
     key: 'addListeners',
     value: function addListeners() {
-      this.canvas.addEventListener('mousedown', this.mouseDown);
-      this.canvas.addEventListener('mousemove', this.mouseMove);
-      this.canvas.addEventListener('mouseleave', this.mouseLeave);
-      this.canvas.addEventListener('mouseup', this.mouseUp);
+      var _this = this;
+
+      this.listenersList.forEach(function (event) {
+        _this.canvas.addEventListener(event.toLowerCase(), _this[event]);
+      });
       document.addEventListener('mouseup', this.mouseUpDocument);
     }
   }, {
     key: 'removeListeners',
     value: function removeListeners() {
-      this.canvas.removeEventListener('mousedown', this.mouseDown);
-      this.canvas.removeEventListener('mouseMove', this.mouseMove);
-      this.canvas.removeEventListener('mouseLeave', this.mouseLeave);
-      this.canvas.removeEventListener('mouseUp', this.mouseUp);
-      document.removeEventListener('mouseUp', this.mouseUpDocument);
+      var _this2 = this;
+
+      this.listenersList.forEach(function (event) {
+        _this2.canvas.removeEventListener(event.toLowerCase(), _this2[event]);
+      });
+      document.removeEventListener('mouseup', this.mouseUpDocument);
     }
   }, {
     key: 'enableDrawingMode',
@@ -129,31 +141,55 @@ var CanvasFreeDrawing = function () {
       if (event.button !== 0) return;
       var x = event.pageX - this.canvas.offsetLeft;
       var y = event.pageY - this.canvas.offsetTop;
-      if (this.isBucketToolEnabled) {
-        this.fill(x, y, this.bucketToolColor, this.bucketToolTolerance);
-        return;
-      }
-      this.isDrawing = true;
-      var lenght = this.storeDrawing(x, y, false);
-      this.lastPath = lenght - 1; // index last new path
-
-      this.canvas.dispatchEvent(this.mouseDownEvent);
-
-      this.redraw();
+      this.drawPoint(x, y);
     }
   }, {
     key: 'mouseMove',
     value: function mouseMove(event) {
-      if (this.leftCanvasDrawing) {
-        this.leftCanvasDrawing = false;
-        this.mouseDown(event);
+      var x = event.pageX - this.canvas.offsetLeft;
+      var y = event.pageY - this.canvas.offsetTop;
+      this.drawLine(x, y);
+    }
+  }, {
+    key: 'touchStart',
+    value: function touchStart(event) {
+      if (event.changedTouches.length > 0) {
+        var _event$changedTouches = event.changedTouches[0],
+            pageX = _event$changedTouches.pageX,
+            pageY = _event$changedTouches.pageY,
+            identifier = _event$changedTouches.identifier;
+
+        var x = pageX - this.canvas.offsetLeft;
+        var y = pageY - this.canvas.offsetTop;
+        this.touchIdentifier = identifier;
+        this.drawPoint(x, y);
       }
-      if (this.isDrawing) {
-        var x = event.pageX - this.canvas.offsetLeft;
-        var y = event.pageY - this.canvas.offsetTop;
-        this.storeDrawing(x, y, true);
-        this.redraw(this.dispatchEventsOnceEvery);
+    }
+  }, {
+    key: 'touchMove',
+    value: function touchMove(event) {
+      if (event.changedTouches.length > 0) {
+        var _event$changedTouches2 = event.changedTouches[0],
+            pageX = _event$changedTouches2.pageX,
+            pageY = _event$changedTouches2.pageY,
+            identifier = _event$changedTouches2.identifier;
+
+        var x = pageX - this.canvas.offsetLeft;
+        var y = pageY - this.canvas.offsetTop;
+
+        // check if is multi touch, if it is do nothing
+        if (identifier != this.touchIdentifier) return;
+
+        this.previousX = x;
+        this.previousY = y;
+        this.drawLine(x, y);
       }
+    }
+  }, {
+    key: 'touchEnd',
+    value: function touchEnd() {
+      this.isDrawing = false;
+      this.canvas.dispatchEvent(this.touchEndEvent);
     }
   }, {
     key: 'mouseUp',
@@ -179,19 +215,37 @@ var CanvasFreeDrawing = function () {
       this.canvas.dispatchEvent(this.mouseEnterEvent);
     }
   }, {
-    key: 'toggleCursor',
-    value: function toggleCursor() {
-      this.canvas.style.cursor = this.isDrawingModeEnabled ? 'crosshair' : 'auto';
+    key: 'drawPoint',
+    value: function drawPoint(x, y) {
+      if (this.isBucketToolEnabled) {
+        this.fill(x, y, this.bucketToolColor, this.bucketToolTolerance);
+        return;
+      }
+      this.isDrawing = true;
+      var length = this.storeDrawing(x, y, false);
+      this.lastPath = length - 1; // index last new path
+
+      this.canvas.dispatchEvent(this.mouseDownEvent);
+
+      this.redraw();
     }
   }, {
-    key: 'storeDrawing',
-    value: function storeDrawing(x, y, moving) {
-      return this.positions.push({ x: x, y: y, moving: moving });
+    key: 'drawLine',
+    value: function drawLine(x, y) {
+      if (this.leftCanvasDrawing) {
+        this.leftCanvasDrawing = false;
+        this.mouseDown(event);
+      }
+
+      if (this.isDrawing) {
+        this.storeDrawing(x, y, true);
+        this.redraw(this.dispatchEventsOnceEvery);
+      }
     }
   }, {
     key: 'redraw',
     value: function redraw(dispatchEventsOnceEvery) {
-      var _this = this;
+      var _this3 = this;
 
       this.context.strokeStyle = this.rgbaFromArray(this.strokeColor);
       this.context.lineJoin = 'round';
@@ -203,15 +257,15 @@ var CanvasFreeDrawing = function () {
             y = _ref.y,
             moving = _ref.moving;
 
-        _this.context.beginPath();
+        _this3.context.beginPath();
         if (moving && i) {
-          _this.context.moveTo(positions[i - 1]['x'], positions[i - 1]['y']);
+          _this3.context.moveTo(positions[i - 1]['x'], positions[i - 1]['y']);
         } else {
-          _this.context.moveTo(x - 1, y);
+          _this3.context.moveTo(x - 1, y);
         }
-        _this.context.lineTo(x, y);
-        _this.context.closePath();
-        _this.context.stroke();
+        _this3.context.lineTo(x, y);
+        _this3.context.closePath();
+        _this3.context.stroke();
       });
 
       if (!dispatchEventsOnceEvery) {
@@ -227,6 +281,7 @@ var CanvasFreeDrawing = function () {
   }, {
     key: 'fill',
     value: function fill(x, y, newColor, tolerance, callback) {
+      newColor = this.validateColor(newColor);
       if (this.positions.length === 0 && !this.imageRestored) {
         this.setBackground(newColor, false);
         return;
@@ -275,6 +330,20 @@ var CanvasFreeDrawing = function () {
 
       if (typeof callback === 'function') callback();
     }
+  }, {
+    key: 'validateColor',
+    value: function validateColor(color, placeholder) {
+      if ((typeof color === 'undefined' ? 'undefined' : _typeof(color)) === 'object' && color.length === 4) color.pop();
+      if ((typeof color === 'undefined' ? 'undefined' : _typeof(color)) === 'object' && color.length === 3) {
+        var validColor = [].concat(_toConsumableArray(color));
+        validColor.push(255);
+        return validColor;
+      } else if (placeholder) {
+        return [0, 0, 0, 255];
+      }
+      console.warn('Color is not valid! It must be an array with RGB values:  [0-255, 0-255, 0-255]');
+      return null;
+    }
 
     // i = color 1; j = color 2; t = tolerance
 
@@ -296,7 +365,6 @@ var CanvasFreeDrawing = function () {
   }, {
     key: 'setNodeColor',
     value: function setNodeColor(x, y, color, data) {
-      color = this.validateColor(color);
       var i = (x + y * this.width) * 4;
       data[i] = color[0];
       data[i + 1] = color[1];
@@ -320,18 +388,14 @@ var CanvasFreeDrawing = function () {
       this.canvas.width = this.width;
     }
   }, {
-    key: 'validateColor',
-    value: function validateColor(color, placeholder) {
-      if ((typeof color === 'undefined' ? 'undefined' : _typeof(color)) === 'object' && color.length === 4) color.pop();
-      if ((typeof color === 'undefined' ? 'undefined' : _typeof(color)) === 'object' && color.length === 3) {
-        var validColor = [].concat(_toConsumableArray(color));
-        validColor.push(255);
-        return validColor;
-      } else if (placeholder) {
-        return [0, 0, 0, 255];
-      }
-      console.warn('Color is not valid! It must be an array with RGB values:  [0-255, 0-255, 0-255]');
-      return null;
+    key: 'toggleCursor',
+    value: function toggleCursor() {
+      this.canvas.style.cursor = this.isDrawingModeEnabled ? 'crosshair' : 'auto';
+    }
+  }, {
+    key: 'storeDrawing',
+    value: function storeDrawing(x, y, moving) {
+      return this.positions.push({ x: x, y: y, moving: moving });
     }
 
     // Public APIs
@@ -431,13 +495,13 @@ var CanvasFreeDrawing = function () {
   }, {
     key: 'restore',
     value: function restore(backup, callback) {
-      var _this2 = this;
+      var _this4 = this;
 
       var image = new Image();
       image.src = backup;
       image.onload = function () {
-        _this2.imageRestored = true;
-        _this2.context.drawImage(image, 0, 0);
+        _this4.imageRestored = true;
+        _this4.context.drawImage(image, 0, 0);
         if (typeof callback === 'function') callback();
       };
     }
