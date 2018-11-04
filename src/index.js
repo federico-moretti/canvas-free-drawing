@@ -17,7 +17,9 @@ export default class CanvasFreeDrawing {
     this.width = width;
     this.height = height;
 
-    this.lastPath = null;
+    this.maxSnapshots = 10;
+    this.snapshots = [];
+    this.undos = [];
     this.positions = [];
     this.leftCanvasDrawing = false; // to check if user left the canvas drawing, on mouseover resume drawing
     this.isDrawing = false;
@@ -143,12 +145,12 @@ export default class CanvasFreeDrawing {
   }
 
   touchEnd() {
-    this.isDrawing = false;
+    this.handleEndDrawing();
     this.canvas.dispatchEvent(this.touchEndEvent);
   }
 
   mouseUp() {
-    this.isDrawing = false;
+    this.handleEndDrawing();
     this.canvas.dispatchEvent(this.mouseUpEvent);
   }
 
@@ -166,18 +168,22 @@ export default class CanvasFreeDrawing {
     this.canvas.dispatchEvent(this.mouseEnterEvent);
   }
 
+  handleEndDrawing() {
+    this.isDrawing = false;
+    this.storeSnapshot();
+  }
+
   drawPoint(x, y) {
     if (this.isBucketToolEnabled) {
-      this.fill(x, y, this.bucketToolColor, this.bucketToolTolerance);
+      this.fill(x, y, this.bucketToolColor, { tolerance: this.bucketToolTolerance });
       return;
     }
     this.isDrawing = true;
-    const length = this.storeDrawing(x, y, false);
-    this.lastPath = length - 1; // index last new path
+    this.storeDrawing(x, y, false);
 
     this.canvas.dispatchEvent(this.mouseDownEvent);
 
-    this.redraw();
+    this.handleDrawing();
   }
 
   drawLine(x, y) {
@@ -188,26 +194,47 @@ export default class CanvasFreeDrawing {
 
     if (this.isDrawing) {
       this.storeDrawing(x, y, true);
-      this.redraw(this.dispatchEventsOnceEvery);
+      this.handleDrawing({ dispatchEventsOnceEvery: this.dispatchEventsOnceEvery });
     }
   }
 
-  redraw(dispatchEventsOnceEvery) {
-    this.context.strokeStyle = this.rgbaFromArray(this.strokeColor);
-    this.context.lineJoin = 'round';
-    this.context.lineWidth = this.lineWidth;
+  handleDrawingHistory({ isUndo, isRedo } = {}) {
+    this.clear({ onlyCanvas: true });
 
-    const positions = [...this.positions].slice(this.lastPath);
-    positions.forEach(({ x, y, moving }, i) => {
-      this.context.beginPath();
-      if (moving && i) {
-        this.context.moveTo(positions[i - 1]['x'], positions[i - 1]['y']);
+    if (isUndo) {
+      if (this.positions.length === 0) return;
+      const undo = this.positions.pop();
+      this.snapshots.push(undo);
+    }
+
+    if (isRedo) {
+      if (this.snapshots.length === 0) return;
+      this.positions.push(this.snapshots[this.snapshots.length - 1]);
+      this.snapshots.pop();
+    }
+
+    const positions = [...this.positions];
+    positions.forEach((position, i) => {
+      if (position.isBucket) {
+        const { x, y, newColor, tolerance } = position;
+        this.fill(x, y, newColor, { tolerance, storeInPosition: false });
       } else {
-        this.context.moveTo(x - 1, y);
+        this.context.strokeStyle = this.rgbaFromArray(position[0].strokeColor);
+        this.context.lineWidth = position[0].lineWidth;
+        this.draw(position);
       }
-      this.context.lineTo(x, y);
-      this.context.closePath();
-      this.context.stroke();
+    });
+  }
+
+  handleDrawing({ dispatchEventsOnceEvery } = {}) {
+    this.context.lineJoin = 'round';
+    const positions = [[...this.positions].pop()];
+
+    positions.forEach(position => {
+      this.context.strokeStyle = this.rgbaFromArray(position[0].strokeColor);
+      this.context.lineWidth = position[0].lineWidth;
+
+      this.draw(position);
     });
 
     if (!dispatchEventsOnceEvery) {
@@ -215,59 +242,82 @@ export default class CanvasFreeDrawing {
     } else if (this.redrawCounter % dispatchEventsOnceEvery === 0) {
       this.canvas.dispatchEvent(this.redrawEvent);
     }
+
+    this.undos = [];
     this.redrawCounter += 1;
   }
 
+  draw(position) {
+    position.forEach(({ x, y, moving }, i) => {
+      this.context.beginPath();
+      if (moving && i) {
+        this.context.moveTo(position[i - 1]['x'], position[i - 1]['y']);
+      } else {
+        this.context.moveTo(x - 1, y);
+      }
+      this.context.lineTo(x, y);
+      this.context.closePath();
+      this.context.stroke();
+    });
+  }
+
   // https://en.wikipedia.org/wiki/Flood_fill
-  fill(x, y, newColor, tolerance, callback) {
-    newColor = this.validateColor(newColor);
-    if (this.positions.length === 0 && !this.imageRestored) {
-      this.setBackground(newColor, false);
-      return;
-    }
-    const imageData = this.context.getImageData(0, 0, this.width, this.height);
-    const data = imageData.data;
-    const nodeColor = this.getNodeColor(x, y, data);
-    const targetColor = this.getNodeColor(x, y, data);
-    if (this.isNodeColorEqual(targetColor, newColor, tolerance)) return;
-    if (!this.isNodeColorEqual(nodeColor, targetColor)) return;
-    const queue = [];
-    queue.push([x, y]);
-
-    while (queue.length) {
-      if (queue.length > this.width * this.height) break;
-      const n = queue.pop();
-      let w = n;
-      let e = n;
-
-      while (this.isNodeColorEqual(this.getNodeColor(w[0] - 1, w[1], data), targetColor, tolerance)) {
-        w = [w[0] - 1, w[1]];
+  fill(x, y, newColor, { tolerance, storeInPosition = true }) {
+    console.log(x, y, newColor, tolerance, storeInPosition);
+    return new Promise(resolve => {
+      newColor = this.validateColor(newColor);
+      if (this.positions.length === 0 && !this.imageRestored) {
+        this.setBackground(newColor, false);
+        return;
       }
+      const imageData = this.context.getImageData(0, 0, this.width, this.height);
+      const data = imageData.data;
+      const targetColor = this.getNodeColor(x, y, data);
+      if (this.isNodeColorEqual(targetColor, newColor, tolerance)) return;
+      // if (!this.isNodeColorEqual(nodeColor, targetColor)) return;
+      const queue = [];
+      queue.push([x, y]);
 
-      while (this.isNodeColorEqual(this.getNodeColor(e[0] + 1, e[1], data), targetColor, tolerance)) {
-        e = [e[0] + 1, e[1]];
-      }
+      while (queue.length) {
+        if (queue.length > this.width * this.height) break;
+        const n = queue.pop();
+        let w = n;
+        let e = n;
 
-      const firstNode = w[0];
-      const lastNode = e[0];
-
-      for (let i = firstNode; i <= lastNode; i++) {
-        this.setNodeColor(i, w[1], newColor, data);
-
-        if (this.isNodeColorEqual(this.getNodeColor(i, w[1] + 1, data), targetColor, tolerance)) {
-          queue.push([i, w[1] + 1]);
+        while (this.isNodeColorEqual(this.getNodeColor(w[0] - 1, w[1], data), targetColor, tolerance)) {
+          w = [w[0] - 1, w[1]];
         }
 
-        if (this.isNodeColorEqual(this.getNodeColor(i, w[1] - 1, data), targetColor, tolerance)) {
-          queue.push([i, w[1] - 1]);
+        while (this.isNodeColorEqual(this.getNodeColor(e[0] + 1, e[1], data), targetColor, tolerance)) {
+          e = [e[0] + 1, e[1]];
+        }
+
+        const firstNode = w[0];
+        const lastNode = e[0];
+
+        for (let i = firstNode; i <= lastNode; i++) {
+          this.setNodeColor(i, w[1], newColor, data);
+
+          if (this.isNodeColorEqual(this.getNodeColor(i, w[1] + 1, data), targetColor, tolerance)) {
+            queue.push([i, w[1] + 1]);
+          }
+
+          if (this.isNodeColorEqual(this.getNodeColor(i, w[1] - 1, data), targetColor, tolerance)) {
+            queue.push([i, w[1] - 1]);
+          }
         }
       }
-    }
 
-    this.context.putImageData(imageData, 0, 0);
-    this.canvas.dispatchEvent(this.redrawEvent);
+      this.context.putImageData(imageData, 0, 0);
+      this.canvas.dispatchEvent(this.redrawEvent);
 
-    if (typeof callback === 'function') callback();
+      if (storeInPosition) {
+        this.positions.push({ isBucket: true, x, y, newColor, tolerance });
+      }
+
+      this.storeSnapshot();
+      resolve();
+    });
   }
 
   validateColor(color, placeholder) {
@@ -285,15 +335,24 @@ export default class CanvasFreeDrawing {
 
   // i = color 1; j = color 2; t = tolerance
   isNodeColorEqual(i, j, t) {
+    console.log({ i, j });
     if (t) {
-      // prettier-ignore
-      return (
-        Math.abs(j[0] - i[0]) <= t &&
-        Math.abs(j[1] - i[1]) <= t &&
-        Math.abs(j[2] - i[2]) <= t
-      );
+      const percentT = (t / 255) * 100;
+      const diffRed = Math.abs(j[0] - i[0]);
+      const diffGreen = Math.abs(j[1] - i[1]);
+      const diffBlue = Math.abs(j[2] - i[2]);
+
+      const percentDiffRed = diffRed / 255;
+      const percentDiffGreen = diffGreen / 255;
+      const percentDiffBlue = diffBlue / 255;
+
+      const percentDiff = ((percentDiffRed + percentDiffGreen + percentDiffBlue) / 3) * 100;
+      return percentT >= percentDiff;
     }
-    return i[0] === j[0] && i[1] === j[1] && i[2] === j[2] && i[3] === j[3];
+
+    const color1 = `${i[0] + i[1] + i[2] + i[3]}`;
+    const color2 = `${j[0] + j[1] + j[2] + j[3]}`;
+    return color1 === color2;
   }
 
   getNodeColor(x, y, data) {
@@ -327,7 +386,45 @@ export default class CanvasFreeDrawing {
   }
 
   storeDrawing(x, y, moving) {
-    return this.positions.push({ x, y, moving });
+    if (moving) {
+      this.positions[this.positions.length - 1].push({
+        x,
+        y,
+        moving,
+        lineWidth: this.lineWidth,
+        strokeColor: this.strokeColor,
+      });
+    } else {
+      this.positions.push([
+        {
+          x,
+          y,
+          moving,
+          lineWidth: this.lineWidth,
+          strokeColor: this.strokeColor,
+        },
+      ]);
+    }
+  }
+
+  storeSnapshot() {
+    console.log('storeSnapshot');
+    new Promise(resolve => {
+      const imageData = this.getCanvasSnapshot();
+      this.snapshots.push(imageData);
+      if (this.snapshots.length > 10) {
+        this.snapshots.splice(-this.maxSnapshots);
+      }
+      resolve();
+    });
+  }
+
+  getCanvasSnapshot() {
+    return this.context.getImageData(0, 0, this.width, this.height);
+  }
+
+  restoreCanvasSnapshot(imageData) {
+    this.context.putImageData(imageData, 0, 0);
   }
 
   // Public APIs
@@ -389,12 +486,15 @@ export default class CanvasFreeDrawing {
     return this.isDrawingModeEnabled;
   }
 
-  clear() {
+  clear({ onlyCanvas } = {}) {
     this.context.clearRect(0, 0, this.width, this.height);
-    this.lastPath = null;
-    this.positions = [];
-    this.isDrawing = false;
-    this.setBackground(this.backgroundColor);
+
+    if (!onlyCanvas) {
+      this.lastPath = [];
+      this.positions = [];
+      this.handleEndDrawing();
+      this.setBackground(this.backgroundColor);
+    }
   }
 
   save() {
@@ -409,5 +509,33 @@ export default class CanvasFreeDrawing {
       this.context.drawImage(image, 0, 0);
       if (typeof callback === 'function') callback();
     };
+  }
+
+  undo() {
+    console.log('undo');
+    const lastSnapshot = this.snapshots[this.snapshots.length - 1];
+    const goToSnapshot = this.snapshots[this.snapshots.length - 2];
+    if (goToSnapshot) {
+      console.log('in goToSnapshot');
+      this.restoreCanvasSnapshot(goToSnapshot);
+      this.snapshots.pop();
+      this.undos.push(lastSnapshot);
+      this.undos = this.undos.splice(-Math.abs(this.maxSnapshots));
+    } else {
+      console.warn('There are no more undos left.');
+    }
+  }
+
+  redo() {
+    console.log('redo');
+    if (this.undos.length > 0) {
+      console.log('in redo > 0');
+      const lastUndo = this.undos.pop();
+      this.restoreCanvasSnapshot(lastUndo);
+      this.snapshots.push(lastUndo);
+      this.snapshots = this.snapshots.splice(-Math.abs(this.maxSnapshots));
+    } else {
+      console.warn('There are no more redo left.');
+    }
   }
 }

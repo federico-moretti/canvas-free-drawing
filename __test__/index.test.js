@@ -23,28 +23,29 @@ describe('CanvasFreeDrawing', () => {
     cfd = new CanvasFreeDrawing({ elementId: id, width: 500, height: 500 });
   });
 
-  it('error if missing parameters', () => {
+  it('should throw error if missing parameters', () => {
     expect(() => {
       cfd = new CanvasFreeDrawing({ width: 500, height: 500 });
     }).toThrow('elementId is required');
   });
 
-  it('check node color equality', () => {
+  it('should check for node color equality', () => {
     const node1 = [0, 0, 0];
     const node2 = [10, 10, 10];
     const node3 = [12, 12, 12];
     expect(cfd.isNodeColorEqual(node1, node1)).toBeTruthy();
+    console.log('????');
     expect(cfd.isNodeColorEqual(node1, node2)).toBeFalsy();
     expect(cfd.isNodeColorEqual(node2, node3, 2)).toBeTruthy(); // with tolerance
   });
 
-  it('set initial correct background color', () => {
+  it('should set initial correct background color', () => {
     cfd = new CanvasFreeDrawing({ elementId: id, width: 500, height: 500, backgroundColor: [255, 255, 255] });
     const color = getNodeColor(250, 250, cfd);
     expect(color).toEqual([255, 255, 255, 255]);
   });
 
-  it('mouse leaves canvas drawing', () => {
+  it('should detect mouse leave the canvas drawing', () => {
     const event1 = { button: 0, pageX: 100, pageY: 100 };
     const event2 = { button: 0, pageX: 500, pageY: 100 };
     cfd.mouseDown(event1);
@@ -55,7 +56,7 @@ describe('CanvasFreeDrawing', () => {
     expect(cfd.leftCanvasDrawing).toBeTruthy();
   });
 
-  it('use floodfill', done => {
+  it('should use floodfill', async () => {
     const event1 = { button: 0, pageX: 100, pageY: 100 };
     const event2 = { button: 0, pageX: 300, pageY: 100 };
     const event3 = { button: 0, pageX: 300, pageY: 300 };
@@ -67,16 +68,14 @@ describe('CanvasFreeDrawing', () => {
     cfd.mouseMove(event4);
     cfd.mouseMove(event5);
 
-    cfd.fill(150, 150, [255, 0, 255], false, () => {
-      const colorLine = getNodeColor(100, 100, cfd);
-      const colorFill = getNodeColor(150, 150, cfd);
-      expect(colorLine).toEqual([0, 0, 0, 255]); // check lines
-      expect(colorFill).toEqual([255, 0, 255, 255]); // check fill
-      done();
-    });
+    await cfd.fill(150, 150, [255, 0, 255], false);
+    const colorLine = getNodeColor(100, 100, cfd);
+    const colorFill = getNodeColor(150, 150, cfd);
+    expect(colorLine).toEqual([0, 0, 0, 255]); // check lines
+    expect(colorFill).toEqual([255, 0, 255, 255]); // check fill
   });
 
-  it('use floodfill with tolerance', done => {
+  it('should use floodfill with tolerance', async () => {
     const event1 = { button: 0, pageX: 100, pageY: 100 };
     const event2 = { button: 0, pageX: 300, pageY: 100 };
     const event3 = { button: 0, pageX: 300, pageY: 300 };
@@ -88,38 +87,36 @@ describe('CanvasFreeDrawing', () => {
     cfd.mouseMove(event4);
     cfd.mouseMove(event5);
 
-    cfd.fill(150, 150, [255, 0, 255], 50, () => {
-      const colorLine = getNodeColor(100, 100, cfd);
-      const colorFill = getNodeColor(150, 150, cfd);
-      expect(colorLine).toEqual([0, 0, 0, 255]); // check lines
-      expect(colorFill).toEqual([255, 0, 255, 255]); // check fill
-      done();
-    });
+    await cfd.fill(150, 150, [255, 0, 255], 50);
+    const colorLine = getNodeColor(100, 100, cfd);
+    const colorFill = getNodeColor(150, 150, cfd);
+    expect(colorLine).toEqual([0, 0, 0, 255]); // check lines
+    expect(colorFill).toEqual([255, 0, 255, 255]); // check fill
   });
 
-  it('draw a red point', () => {
+  it('should draw a red point', () => {
     const event = { button: 0, pageX: 10, pageY: 10 };
     cfd.setDrawingColor([255, 0, 0]);
     cfd.mouseDown(event);
     cfd.mouseUp();
 
     const color = getNodeColor(10, 10, cfd);
-    expect(cfd.positions[0]).toEqual({ moving: false, x: 10, y: 10 });
+    expect(cfd.positions[0][0]).toEqual({ lineWidth: 5, moving: false, strokeColor: [255, 0, 0, 255], x: 10, y: 10 });
     expect(color).toEqual([255, 0, 0, 255]);
   });
 
-  it('draw a red point with touch', () => {
+  it('should draw a red point with touch', () => {
     const event = { changedTouches: [{ pageX: 10, pageY: 10 }] };
     cfd.setDrawingColor([255, 0, 0]);
     cfd.touchStart(event);
     cfd.touchEnd();
 
     const color = getNodeColor(10, 10, cfd);
-    expect(cfd.positions[0]).toEqual({ moving: false, x: 10, y: 10 });
+    expect(cfd.positions[0][0]).toEqual({ lineWidth: 5, moving: false, strokeColor: [255, 0, 0, 255], x: 10, y: 10 });
     expect(color).toEqual([255, 0, 0, 255]);
   });
 
-  it('draw a black line', () => {
+  it('should draw a black line', () => {
     const event1 = { button: 0, pageX: 10, pageY: 10 };
     const event2 = { button: 0, pageX: 15, pageY: 15 };
     cfd.mouseDown(event1);
@@ -127,12 +124,12 @@ describe('CanvasFreeDrawing', () => {
     cfd.mouseUp();
 
     const color = getNodeColor(15, 15, cfd);
-    expect(cfd.positions[0]).toEqual({ moving: false, x: 10, y: 10 });
-    expect(cfd.positions[1]).toEqual({ moving: true, x: 15, y: 15 });
+    expect(cfd.positions[0][0]).toEqual({ lineWidth: 5, moving: false, strokeColor: [0, 0, 0, 255], x: 10, y: 10 });
+    expect(cfd.positions[0][1]).toEqual({ lineWidth: 5, moving: true, strokeColor: [0, 0, 0, 255], x: 15, y: 15 });
     expect(color).toEqual([0, 0, 0, 255]);
   });
 
-  it('draw a black line with touch', () => {
+  it('should draw a black line with touch', () => {
     const event1 = { changedTouches: [{ pageX: 10, pageY: 10 }] };
     const event2 = { changedTouches: [{ pageX: 15, pageY: 15 }] };
     cfd.touchStart(event1);
@@ -140,47 +137,47 @@ describe('CanvasFreeDrawing', () => {
     cfd.touchEnd();
 
     const color = getNodeColor(15, 15, cfd);
-    expect(cfd.positions[0]).toEqual({ moving: false, x: 10, y: 10 });
-    expect(cfd.positions[1]).toEqual({ moving: true, x: 15, y: 15 });
+    expect(cfd.positions[0][0]).toEqual({ lineWidth: 5, moving: false, strokeColor: [0, 0, 0, 255], x: 10, y: 10 });
+    expect(cfd.positions[0][1]).toEqual({ lineWidth: 5, moving: true, strokeColor: [0, 0, 0, 255], x: 15, y: 15 });
     expect(color).toEqual([0, 0, 0, 255]);
   });
 
-  it('register and fire redraw event', done => {
+  it('should register and fire redraw event', done => {
     cfd.on({ event: 'redraw' }, () => done());
     const event1 = { button: 0, pageX: 100, pageY: 100 };
     cfd.mouseDown(event1);
   });
 
-  it('try to register for a not allowed event', () => {
+  it('should try to register for a not allowed event', () => {
     cfd.on({ event: 'jump' }, () => {});
     expect(global.console.warn).toHaveBeenCalledWith('This event is not allowed: jump');
   });
 
-  it('set background', () => {
+  it('should set a background color', () => {
     cfd.setBackground([255, 0, 255, 255]);
     const color = getNodeColor(150, 150, cfd);
     expect(color).toEqual([255, 0, 255, 255]);
   });
 
-  it('set line width', () => {
+  it('should set a line width', () => {
     cfd.setLineWidth(10);
     expect(cfd.lineWidth).toBe(10);
   });
 
-  it('set colors separately', () => {
+  it('should set colors separately', () => {
     cfd.setDrawingColor([255, 0, 255, 255]);
     cfd.configBucketTool({ color: [255, 0, 255, 255] });
     expect(cfd.strokeColor).toEqual([255, 0, 255, 255]);
     expect(cfd.bucketToolColor).toEqual([255, 0, 255, 255]);
   });
 
-  it('set drawing color', () => {
+  it('should set a drawing color', () => {
     cfd.setDrawingColor([255, 0, 255, 255]);
     expect(cfd.strokeColor).toEqual([255, 0, 255, 255]);
     expect(cfd.bucketToolColor).toEqual([255, 0, 255, 255]);
   });
 
-  it('toggle drawing mode', () => {
+  it('should toggle drawing mode', () => {
     expect(cfd.canvas.style.cursor).toBe('crosshair');
     expect(cfd.isDrawingModeEnabled).toBeTruthy();
     cfd.toggleDrawingMode();
@@ -188,14 +185,14 @@ describe('CanvasFreeDrawing', () => {
     expect(cfd.isDrawingModeEnabled).toBeFalsy();
   });
 
-  it('toggle bucket tool', () => {
+  it('should toggle bucket tool', () => {
     cfd.toggleBucketTool();
     expect(cfd.isBucketToolEnabled).toBeTruthy();
     cfd.toggleBucketTool();
     expect(cfd.isBucketToolEnabled).toBeFalsy();
   });
 
-  it('save, clear and restore canvas', () => {
+  it('should save, clear and restore canvas', () => {
     const event1 = { button: 0, pageX: 100, pageY: 100 };
     cfd.mouseDown(event1);
     const colorAfterClick = getNodeColor(100, 100, cfd);

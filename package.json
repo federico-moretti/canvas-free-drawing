@@ -5,12 +5,13 @@
   "main": "cjs/index.js",
   "module": "src/index.js",
   "scripts": {
+    "dev:start": "concurrently \"nodemon --watch src/index.js --exec yarn build:umd\" \"browser-sync start --server --files 'umd/*.js' 'index.html'\"",
     "dev:build": "nodemon --watch src/index.js --exec yarn build:umd",
-    "dev:test": "jest --verbose --coverage --watchAll",
+    "dev:test": "NODE_ENV=test jest -i --verbose --watchAll",
     "build:cjs": "babel --plugins transform-es2015-modules-commonjs src/index.js -o cjs/index.js",
     "build:umd": "rollup --config rollup.config.js",
     "minify:umd": "minify umd/canvas-free-drawing.js -o umd/canvas-free-drawing.min.js",
-    "test": "jest",
+    "test": "NODE_ENV=test jest --coverage",
     "prepare": "npm run test && npm run build:cjs && npm run build:umd && npm run minify:umd"
   },
   "author": "Federico Moretti",
@@ -23,30 +24,36 @@
     "no-dependencies"
   ],
   "devDependencies": {
-    "babel": "^6.23.0",
-    "babel-cli": "^6.26.0",
-    "babel-jest": "^23.4.2",
-    "babel-minify": "^0.4.3",
+    "@babel/cli": "^7.1.2",
+    "@babel/core": "^7.1.2",
+    "@babel/polyfill": "^7.0.0",
+    "@babel/preset-env": "^7.1.0",
+    "babel-core": "^7.0.0-bridge.0",
+    "babel-jest": "^23.6.0",
+    "babel-minify": "^0.5.0",
+    "babel-plugin-external-helpers": "^6.22.0",
     "babel-plugin-transform-es2015-modules-commonjs": "^6.26.2",
     "babel-plugin-transform-es2015-modules-umd": "^6.24.1",
-    "babel-preset-env": "^1.6.1",
-    "babel-preset-minify": "^0.4.3",
-    "canvas": "^1.6.11",
-    "jest": "^23.5.0",
+    "babel-preset-minify": "^0.5.0",
+    "browser-sync": "^2.26.3",
+    "canvas": "1.6.13",
+    "concurrently": "^4.0.1",
+    "jest": "^23.6.0",
     "jest-canvas-mock": "^1.1.0",
-    "rollup": "^0.62.0"
+    "regenerator-runtime": "^0.12.1",
+    "rollup": "^0.66.6",
+    "rollup-plugin-babel": "^4.0.3",
+    "rollup-plugin-node-resolve": "^3.4.0"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/ikos9/canvas-free-drawing.git"
   },
-  "engines": {
-    "node": ">= 8.0.0"
-  },
-  "dependencies": {
-    "rollup-plugin-babel": "^3.0.7"
-  },
   "jest": {
+    "verbose": false,
+    "collectCoverageFrom": [
+      "src/*"
+    ],
     "setupFiles": [
       "jest-canvas-mock"
     ]
