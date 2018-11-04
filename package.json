@@ -7,11 +7,11 @@
   "scripts": {
     "dev:start": "concurrently \"nodemon --watch src/index.js --exec yarn build:umd\" \"browser-sync start --server --files 'umd/*.js' 'index.html'\"",
     "dev:build": "nodemon --watch src/index.js --exec yarn build:umd",
-    "dev:test": "NODE_ENV=test jest -i --verbose --watchAll",
+    "dev:test": "jest --watchAll",
     "build:cjs": "babel --plugins transform-es2015-modules-commonjs src/index.js -o cjs/index.js",
     "build:umd": "rollup --config rollup.config.js",
     "minify:umd": "minify umd/canvas-free-drawing.js -o umd/canvas-free-drawing.min.js",
-    "test": "NODE_ENV=test jest --coverage",
+    "test": "jest --verbose true --coverage",
     "prepare": "npm run test && npm run build:cjs && npm run build:umd && npm run minify:umd"
   },
   "author": "Federico Moretti",
@@ -53,9 +53,6 @@
     "verbose": false,
     "collectCoverageFrom": [
       "src/*"
-    ],
-    "setupFiles": [
-      "jest-canvas-mock"
     ]
   }
 }

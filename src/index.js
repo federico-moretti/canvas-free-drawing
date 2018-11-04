@@ -8,6 +8,7 @@ export default class CanvasFreeDrawing {
       lineWidth,
       strokeColor,
       disabled,
+      showWarnings = false,
     } = params;
 
     this.elementId = elementId;
@@ -60,6 +61,8 @@ export default class CanvasFreeDrawing {
     this.previousX = null;
     this.previousY = null;
 
+    this.showWarnings = showWarnings;
+
     this.setDimensions();
     this.setBackground(backgroundColor);
 
@@ -68,6 +71,10 @@ export default class CanvasFreeDrawing {
 
   requiredParam(param) {
     throw new Error(`${param} is required`);
+  }
+
+  logWarning(...args) {
+    if (this.showWarnings) console.warn(...args);
   }
 
   checkCanvasElement() {
@@ -198,34 +205,6 @@ export default class CanvasFreeDrawing {
     }
   }
 
-  handleDrawingHistory({ isUndo, isRedo } = {}) {
-    this.clear({ onlyCanvas: true });
-
-    if (isUndo) {
-      if (this.positions.length === 0) return;
-      const undo = this.positions.pop();
-      this.snapshots.push(undo);
-    }
-
-    if (isRedo) {
-      if (this.snapshots.length === 0) return;
-      this.positions.push(this.snapshots[this.snapshots.length - 1]);
-      this.snapshots.pop();
-    }
-
-    const positions = [...this.positions];
-    positions.forEach((position, i) => {
-      if (position.isBucket) {
-        const { x, y, newColor, tolerance } = position;
-        this.fill(x, y, newColor, { tolerance, storeInPosition: false });
-      } else {
-        this.context.strokeStyle = this.rgbaFromArray(position[0].strokeColor);
-        this.context.lineWidth = position[0].lineWidth;
-        this.draw(position);
-      }
-    });
-  }
-
   handleDrawing({ dispatchEventsOnceEvery } = {}) {
     this.context.lineJoin = 'round';
     const positions = [[...this.positions].pop()];
@@ -263,7 +242,6 @@ export default class CanvasFreeDrawing {
 
   // https://en.wikipedia.org/wiki/Flood_fill
   fill(x, y, newColor, { tolerance, storeInPosition = true }) {
-    console.log(x, y, newColor, tolerance, storeInPosition);
     return new Promise(resolve => {
       newColor = this.validateColor(newColor);
       if (this.positions.length === 0 && !this.imageRestored) {
@@ -329,13 +307,12 @@ export default class CanvasFreeDrawing {
     } else if (placeholder) {
       return [0, 0, 0, 255];
     }
-    console.warn('Color is not valid! It must be an array with RGB values:  [0-255, 0-255, 0-255]');
+    this.logWarning('Color is not valid! It must be an array with RGB values:  [0-255, 0-255, 0-255]');
     return null;
   }
 
   // i = color 1; j = color 2; t = tolerance
   isNodeColorEqual(i, j, t) {
-    console.log({ i, j });
     if (t) {
       const percentT = (t / 255) * 100;
       const diffRed = Math.abs(j[0] - i[0]);
@@ -350,8 +327,8 @@ export default class CanvasFreeDrawing {
       return percentT >= percentDiff;
     }
 
-    const color1 = `${i[0] + i[1] + i[2] + i[3]}`;
-    const color2 = `${j[0] + j[1] + j[2] + j[3]}`;
+    const color1 = '' + i[0] + i[1] + i[2] + i[3];
+    const color2 = '' + j[0] + j[1] + j[2] + j[3];
     return color1 === color2;
   }
 
@@ -370,10 +347,6 @@ export default class CanvasFreeDrawing {
 
   rgbaFromArray(a) {
     return `rgba(${a[0]},${a[1]},${a[2]},${a[3]})`;
-  }
-
-  rgbFromArray(a) {
-    return `rgb(${a[0]},${a[1]},${a[2]})`;
   }
 
   setDimensions() {
@@ -408,7 +381,6 @@ export default class CanvasFreeDrawing {
   }
 
   storeSnapshot() {
-    console.log('storeSnapshot');
     new Promise(resolve => {
       const imageData = this.getCanvasSnapshot();
       this.snapshots.push(imageData);
@@ -438,7 +410,7 @@ export default class CanvasFreeDrawing {
       }
       this.canvas.addEventListener('cfd_' + event, () => callback());
     } else {
-      console.warn(`This event is not allowed: ${event}`);
+      this.logWarning(`This event is not allowed: ${event}`);
     }
   }
 
@@ -512,30 +484,27 @@ export default class CanvasFreeDrawing {
   }
 
   undo() {
-    console.log('undo');
+    // TODO: this should work also on the first draw
     const lastSnapshot = this.snapshots[this.snapshots.length - 1];
     const goToSnapshot = this.snapshots[this.snapshots.length - 2];
     if (goToSnapshot) {
-      console.log('in goToSnapshot');
       this.restoreCanvasSnapshot(goToSnapshot);
       this.snapshots.pop();
       this.undos.push(lastSnapshot);
       this.undos = this.undos.splice(-Math.abs(this.maxSnapshots));
     } else {
-      console.warn('There are no more undos left.');
+      this.logWarning('There are no more undos left.');
     }
   }
 
   redo() {
-    console.log('redo');
     if (this.undos.length > 0) {
-      console.log('in redo > 0');
       const lastUndo = this.undos.pop();
       this.restoreCanvasSnapshot(lastUndo);
       this.snapshots.push(lastUndo);
       this.snapshots = this.snapshots.splice(-Math.abs(this.maxSnapshots));
     } else {
-      console.warn('There are no more redo left.');
+      this.logWarning('There are no more redo left.');
     }
   }
 }
