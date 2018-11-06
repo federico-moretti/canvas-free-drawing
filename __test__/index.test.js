@@ -81,6 +81,18 @@ describe('CanvasFreeDrawing', () => {
     expect(cfd.leftCanvasDrawing).toBeTruthy();
   });
 
+  it('should detect the mouse enter the canvas', done => {
+    cfd.on({ event: 'mouseenter' }, () => {
+      done();
+    });
+    cfd.mouseEnter();
+  });
+
+  it('should detect the mouseup outside the canvas', () => {
+    cfd.mouseUpDocument();
+    expect(cfd.leftCanvasDrawing).toBeFalsy();
+  });
+
   it('should use floodfill', async () => {
     const clickEvent = { button: 0, pageX: 100, pageY: 100 };
     const moveEvents = [

@@ -458,15 +458,12 @@ export default class CanvasFreeDrawing {
     return this.isDrawingModeEnabled;
   }
 
-  clear({ onlyCanvas } = {}) {
+  clear() {
     this.context.clearRect(0, 0, this.width, this.height);
-
-    if (!onlyCanvas) {
-      this.lastPath = [];
-      this.positions = [];
-      this.handleEndDrawing();
-      this.setBackground(this.backgroundColor);
-    }
+    this.lastPath = [];
+    this.positions = [];
+    this.handleEndDrawing();
+    this.setBackground(this.backgroundColor);
   }
 
   save() {
