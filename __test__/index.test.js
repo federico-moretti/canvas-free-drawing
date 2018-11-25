@@ -16,7 +16,11 @@ describe('CanvasFreeDrawing', () => {
   const drawPoint = ({ x, y, color }) => {
     const event = { button: 0, pageX: x, pageY: y };
     cfd.setDrawingColor(color);
-    cfd.mouseDown(event);
+    if (cfd.isBucketToolEnabled) {
+      return cfd.mouseDown(event);
+    } else {
+      cfd.mouseDown(event);
+    }
     cfd.mouseUp();
   };
 
@@ -31,7 +35,7 @@ describe('CanvasFreeDrawing', () => {
   // tests
   it('should throw error if missing parameters', () => {
     expect(() => {
-      cfd = new CanvasFreeDrawing({ width: 500, height: 500 });
+      cfd = new CanvasFreeDrawing({ width: 500, height: 500, showWarnings: true });
     }).toThrow('elementId is required');
     expect(() => {
       cfd = new CanvasFreeDrawing({ elementId: id, width: 500 });
@@ -105,8 +109,11 @@ describe('CanvasFreeDrawing', () => {
     cfd.mouseDown(clickEvent);
     moveEvents.forEach(event => cfd.mouseMove(event));
 
+    cfd.configBucketTool({ color: [255, 0, 255] });
     cfd.toggleBucketTool();
-    drawPoint({ x: 150, y: 150, color: [255, 0, 255] }); // simulate click
+    expect(cfd.isBucketToolEnabled).toBe(true);
+
+    await drawPoint({ x: 150, y: 150, color: [255, 0, 255] }); // simulate click
     const colorLine = getNodeColor(100, 100, cfd);
     const colorFill = getNodeColor(150, 150, cfd);
     expect(colorLine).toEqual([0, 0, 0, 255]); // check lines
@@ -125,7 +132,13 @@ describe('CanvasFreeDrawing', () => {
     cfd.mouseDown(clickEvent);
     moveEvents.forEach(event => cfd.mouseMove(event));
 
-    await cfd.fill(150, 150, [255, 0, 255], 50);
+    cfd.configBucketTool({ tolerance: 0, color: [255, 0, 255] });
+    cfd.toggleBucketTool();
+    expect(cfd.isBucketToolEnabled).toBe(true);
+
+    const didDraw = await drawPoint({ x: 150, y: 150, color: [255, 0, 255] }); // simulate click
+    expect(didDraw).toBe(true);
+
     const colorLine = getNodeColor(100, 100, cfd);
     const colorFill = getNodeColor(150, 150, cfd);
     expect(colorLine).toEqual([0, 0, 0, 255]); // check lines
@@ -307,12 +320,14 @@ describe('CanvasFreeDrawing', () => {
     cfd.undo();
     expect(console.warn.mock.calls.length).toBe(0);
     cfd.undo();
+    cfd.undo();
     expect(console.warn.mock.calls.length).toBe(1);
     expect(console.warn).toHaveBeenCalledWith('There are no more undos left.');
 
     console.warn.mockReset();
     cfd.redo();
     expect(console.warn.mock.calls.length).toBe(0);
+    cfd.redo();
     cfd.redo();
     expect(console.warn.mock.calls.length).toBe(1);
     expect(console.warn).toHaveBeenCalledWith('There are no more redo left.');

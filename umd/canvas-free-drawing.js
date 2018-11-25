@@ -76,18 +76,21 @@
           height = _params$height === void 0 ? this.requiredParam('height') : _params$height,
           _params$backgroundCol = params.backgroundColor,
           backgroundColor = _params$backgroundCol === void 0 ? [255, 255, 255] : _params$backgroundCol,
-          lineWidth = params.lineWidth,
+          _params$lineWidth = params.lineWidth,
+          lineWidth = _params$lineWidth === void 0 ? 5 : _params$lineWidth,
           strokeColor = params.strokeColor,
-          disabled = params.disabled;
+          disabled = params.disabled,
+          _params$showWarnings = params.showWarnings,
+          showWarnings = _params$showWarnings === void 0 ? false : _params$showWarnings,
+          _params$maxSnapshots = params.maxSnapshots,
+          maxSnapshots = _params$maxSnapshots === void 0 ? 10 : _params$maxSnapshots;
       this.elementId = elementId;
       this.canvas = document.getElementById(this.elementId);
       this.checkCanvasElement();
-      this.context = this.canvas.getContext('2d', {
-        alpha: false
-      });
+      this.context = this.canvas.getContext('2d');
       this.width = width;
       this.height = height;
-      this.maxSnapshots = 10;
+      this.maxSnapshots = maxSnapshots;
       this.snapshots = [];
       this.undos = [];
       this.positions = [];
@@ -96,7 +99,7 @@
       this.isDrawing = false;
       this.isDrawingModeEnabled = true;
       this.imageRestored = false;
-      this.lineWidth = lineWidth || 5;
+      this.lineWidth = lineWidth;
       this.strokeColor = this.validateColor(strokeColor, true);
       this.bucketToolColor = this.validateColor(strokeColor, true);
       this.bucketToolTolerance = 0;
@@ -126,8 +129,12 @@
       this.touchIdentifier = null;
       this.previousX = null;
       this.previousY = null;
+      this.showWarnings = showWarnings; // cache
+
+      this.isNodeColorEqualCache = [];
       this.setDimensions();
       this.setBackground(backgroundColor);
+      this.storeSnapshot();
       if (!disabled) this.enableDrawingMode();
     }
 
@@ -135,6 +142,13 @@
       key: "requiredParam",
       value: function requiredParam(param) {
         throw new Error("".concat(param, " is required"));
+      }
+    }, {
+      key: "logWarning",
+      value: function logWarning() {
+        var _console;
+
+        if (this.showWarnings) (_console = console).warn.apply(_console, arguments);
       }
     }, {
       key: "checkCanvasElement",
@@ -187,7 +201,7 @@
         if (event.button !== 0) return;
         var x = event.pageX - this.canvas.offsetLeft;
         var y = event.pageY - this.canvas.offsetTop;
-        this.drawPoint(x, y);
+        return this.drawPoint(x, y);
       }
     }, {
       key: "mouseMove",
@@ -207,7 +221,7 @@
           var x = pageX - this.canvas.offsetLeft;
           var y = pageY - this.canvas.offsetTop;
           this.touchIdentifier = identifier;
-          this.drawPoint(x, y);
+          return this.drawPoint(x, y);
         }
       }
     }, {
@@ -266,10 +280,9 @@
       key: "drawPoint",
       value: function drawPoint(x, y) {
         if (this.isBucketToolEnabled) {
-          this.fill(x, y, this.bucketToolColor, {
+          return this.fill(x, y, this.bucketToolColor, {
             tolerance: this.bucketToolTolerance
           });
-          return;
         }
 
         this.isDrawing = true;
@@ -293,66 +306,20 @@
         }
       }
     }, {
-      key: "handleDrawingHistory",
-      value: function handleDrawingHistory() {
+      key: "handleDrawing",
+      value: function handleDrawing() {
         var _this3 = this;
 
         var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-            isUndo = _ref.isUndo,
-            isRedo = _ref.isRedo;
-
-        this.clear({
-          onlyCanvas: true
-        });
-
-        if (isUndo) {
-          if (this.positions.length === 0) return;
-          var undo = this.positions.pop();
-          this.snapshots.push(undo);
-        }
-
-        if (isRedo) {
-          if (this.snapshots.length === 0) return;
-          this.positions.push(this.snapshots[this.snapshots.length - 1]);
-          this.snapshots.pop();
-        }
-
-        var positions = _toConsumableArray(this.positions);
-
-        positions.forEach(function (position, i) {
-          if (position.isBucket) {
-            var x = position.x,
-                y = position.y,
-                newColor = position.newColor,
-                tolerance = position.tolerance;
-
-            _this3.fill(x, y, newColor, {
-              tolerance: tolerance,
-              storeInPosition: false
-            });
-          } else {
-            _this3.context.strokeStyle = _this3.rgbaFromArray(position[0].strokeColor);
-            _this3.context.lineWidth = position[0].lineWidth;
-
-            _this3.draw(position);
-          }
-        });
-      }
-    }, {
-      key: "handleDrawing",
-      value: function handleDrawing() {
-        var _this4 = this;
-
-        var _ref2 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-            dispatchEventsOnceEvery = _ref2.dispatchEventsOnceEvery;
+            dispatchEventsOnceEvery = _ref.dispatchEventsOnceEvery;
 
         this.context.lineJoin = 'round';
         var positions = [_toConsumableArray(this.positions).pop()];
         positions.forEach(function (position) {
-          _this4.context.strokeStyle = _this4.rgbaFromArray(position[0].strokeColor);
-          _this4.context.lineWidth = position[0].lineWidth;
+          _this3.context.strokeStyle = _this3.rgbaFromArray(position[0].strokeColor);
+          _this3.context.lineWidth = position[0].lineWidth;
 
-          _this4.draw(position);
+          _this3.draw(position);
         });
 
         if (!dispatchEventsOnceEvery) {
@@ -367,69 +334,69 @@
     }, {
       key: "draw",
       value: function draw(position) {
-        var _this5 = this;
+        var _this4 = this;
 
-        position.forEach(function (_ref3, i) {
-          var x = _ref3.x,
-              y = _ref3.y,
-              moving = _ref3.moving;
+        position.forEach(function (_ref2, i) {
+          var x = _ref2.x,
+              y = _ref2.y,
+              moving = _ref2.moving;
 
-          _this5.context.beginPath();
+          _this4.context.beginPath();
 
           if (moving && i) {
-            _this5.context.moveTo(position[i - 1]['x'], position[i - 1]['y']);
+            _this4.context.moveTo(position[i - 1]['x'], position[i - 1]['y']);
           } else {
-            _this5.context.moveTo(x - 1, y);
+            _this4.context.moveTo(x - 1, y);
           }
 
-          _this5.context.lineTo(x, y);
+          _this4.context.lineTo(x, y);
 
-          _this5.context.closePath();
+          _this4.context.closePath();
 
-          _this5.context.stroke();
+          _this4.context.stroke();
         });
       } // https://en.wikipedia.org/wiki/Flood_fill
 
     }, {
       key: "fill",
-      value: function fill(x, y, newColor, _ref4) {
-        var _this6 = this;
+      value: function fill(x, y, newColor, _ref3) {
+        var _this5 = this;
 
-        var tolerance = _ref4.tolerance,
-            _ref4$storeInPosition = _ref4.storeInPosition,
-            storeInPosition = _ref4$storeInPosition === void 0 ? true : _ref4$storeInPosition;
-        console.log(x, y, newColor, tolerance, storeInPosition);
+        var tolerance = _ref3.tolerance,
+            _ref3$storeInPosition = _ref3.storeInPosition,
+            storeInPosition = _ref3$storeInPosition === void 0 ? true : _ref3$storeInPosition;
         return new Promise(function (resolve) {
-          newColor = _this6.validateColor(newColor);
+          newColor = _this5.validateColor(newColor);
 
-          if (_this6.positions.length === 0 && !_this6.imageRestored) {
-            _this6.setBackground(newColor, false);
+          if (_this5.positions.length === 0 && !_this5.imageRestored) {
+            _this5.setBackground(newColor, false);
+
+            _this5.canvas.dispatchEvent(_this5.redrawEvent);
 
             return;
           }
 
-          var imageData = _this6.context.getImageData(0, 0, _this6.width, _this6.height);
+          var imageData = _this5.context.getImageData(0, 0, _this5.width, _this5.height);
 
-          var data = imageData.data;
+          var newData = imageData.data;
 
-          var targetColor = _this6.getNodeColor(x, y, data);
+          var targetColor = _this5.getNodeColor(x, y, newData);
 
-          if (_this6.isNodeColorEqual(targetColor, newColor, tolerance)) return; // if (!this.isNodeColorEqual(nodeColor, targetColor)) return;
-
+          if (_this5.isNodeColorEqual(targetColor, newColor, tolerance)) return;
           var queue = [];
           queue.push([x, y]);
 
           while (queue.length) {
-            if (queue.length > _this6.width * _this6.height) break;
+            if (queue.length > _this5.width * _this5.height) break;
             var n = queue.pop();
             var w = n;
             var e = n;
 
-            while (_this6.isNodeColorEqual(_this6.getNodeColor(w[0] - 1, w[1], data), targetColor, tolerance)) {
+            while (_this5.isNodeColorEqual(_this5.getNodeColor(w[0] - 1, w[1], newData), targetColor, tolerance)) {
               w = [w[0] - 1, w[1]];
             }
 
-            while (_this6.isNodeColorEqual(_this6.getNodeColor(e[0] + 1, e[1], data), targetColor, tolerance)) {
+            while (_this5.isNodeColorEqual(_this5.getNodeColor(e[0] + 1, e[1], newData), targetColor, tolerance)) {
               e = [e[0] + 1, e[1]];
             }
 
@@ -437,24 +404,24 @@
             var lastNode = e[0];
 
             for (var i = firstNode; i <= lastNode; i++) {
-              _this6.setNodeColor(i, w[1], newColor, data);
+              _this5.setNodeColor(i, w[1], newColor, newData);
 
-              if (_this6.isNodeColorEqual(_this6.getNodeColor(i, w[1] + 1, data), targetColor, tolerance)) {
+              if (_this5.isNodeColorEqual(_this5.getNodeColor(i, w[1] + 1, newData), targetColor, tolerance)) {
                 queue.push([i, w[1] + 1]);
               }
 
-              if (_this6.isNodeColorEqual(_this6.getNodeColor(i, w[1] - 1, data), targetColor, tolerance)) {
+              if (_this5.isNodeColorEqual(_this5.getNodeColor(i, w[1] - 1, newData), targetColor, tolerance)) {
                 queue.push([i, w[1] - 1]);
               }
             }
           }
 
-          _this6.context.putImageData(imageData, 0, 0);
+          _this5.context.putImageData(imageData, 0, 0);
 
-          _this6.canvas.dispatchEvent(_this6.redrawEvent);
+          _this5.canvas.dispatchEvent(_this5.redrawEvent);
 
           if (storeInPosition) {
-            _this6.positions.push({
+            _this5.positions.push({
               isBucket: true,
               x: x,
               y: y,
@@ -463,9 +430,7 @@
             });
           }
 
-          _this6.storeSnapshot();
-
-          resolve();
+          resolve(true);
         });
       }
     }, {
@@ -482,28 +447,33 @@
           return [0, 0, 0, 255];
         }
 
-        console.warn('Color is not valid! It must be an array with RGB values:  [0-255, 0-255, 0-255]');
+        this.logWarning('Color is not valid! It must be an array with RGB values:  [0-255, 0-255, 0-255]');
         return null;
       } // i = color 1; j = color 2; t = tolerance
 
     }, {
       key: "isNodeColorEqual",
       value: function isNodeColorEqual(i, j, t) {
-        if (t) {
-          var percentT = t / 255 * 100;
-          var diffRed = Math.abs(j[0] - i[0]);
-          var diffGreen = Math.abs(j[1] - i[1]);
-          var diffBlue = Math.abs(j[2] - i[2]);
-          var percentDiffRed = diffRed / 255;
-          var percentDiffGreen = diffGreen / 255;
-          var percentDiffBlue = diffBlue / 255;
-          var percentDiff = (percentDiffRed + percentDiffGreen + percentDiffBlue) / 3 * 100;
-          return percentT >= percentDiff;
+        // const color1 = JSON.stringify(i);
+        // const color2 = JSON.stringify(j);
+        var color1 = '' + i[0] + i[1] + i[2] + i[3];
+        var color2 = '' + j[0] + j[1] + j[2] + j[3];
+        t = t || 0;
+
+        if (this.isNodeColorEqualCache.hasOwnProperty(color1 + color2 + t)) {
+          return this.isNodeColorEqualCache[color1 + color2 + t];
         }
 
-        var color1 = "".concat(i[0] + i[1] + i[2] + i[3]);
-        var color2 = "".concat(j[0] + j[1] + j[2] + j[3]);
-        return color1 === color2;
+        var diffRed = Math.abs(j[0] - i[0]);
+        var diffGreen = Math.abs(j[1] - i[1]);
+        var diffBlue = Math.abs(j[2] - i[2]);
+        var percentDiffRed = diffRed / 255;
+        var percentDiffGreen = diffGreen / 255;
+        var percentDiffBlue = diffBlue / 255;
+        var percentDiff = (percentDiffRed + percentDiffGreen + percentDiffBlue) / 3 * 100;
+        var result = t >= percentDiff;
+        this.isNodeColorEqualCache[color1 + color2 + t] = result;
+        return result;
       }
     }, {
       key: "getNodeColor",
@@ -524,11 +494,6 @@
       key: "rgbaFromArray",
       value: function rgbaFromArray(a) {
         return "rgba(".concat(a[0], ",").concat(a[1], ",").concat(a[2], ",").concat(a[3], ")");
-      }
-    }, {
-      key: "rgbFromArray",
-      value: function rgbFromArray(a) {
-        return "rgb(".concat(a[0], ",").concat(a[1], ",").concat(a[2], ")");
       }
     }, {
       key: "setDimensions",
@@ -565,16 +530,15 @@
     }, {
       key: "storeSnapshot",
       value: function storeSnapshot() {
-        var _this7 = this;
+        var _this6 = this;
 
-        console.log('storeSnapshot');
         new Promise(function (resolve) {
-          var imageData = _this7.getCanvasSnapshot();
+          var imageData = _this6.getCanvasSnapshot();
 
-          _this7.snapshots.push(imageData);
+          _this6.snapshots.push(imageData);
 
-          if (_this7.snapshots.length > 10) {
-            _this7.snapshots.splice(-_this7.maxSnapshots);
+          if (_this6.snapshots.length > _this6.maxSnapshots) {
+            _this6.snapshots = _this6.snapshots.splice(-Math.abs(_this6.maxSnapshots));
           }
 
           resolve();
@@ -607,7 +571,7 @@
             return callback();
           });
         } else {
-          console.warn("This event is not allowed: ".concat(event));
+          this.logWarning("This event is not allowed: ".concat(event));
         }
       }
     }, {
@@ -648,7 +612,10 @@
             _params$tolerance = params.tolerance,
             tolerance = _params$tolerance === void 0 ? null : _params$tolerance;
         if (color) this.bucketToolColor = this.validateColor(color);
-        if (tolerance && tolerance > 0) this.bucketToolTolerance = tolerance;
+
+        if (tolerance && tolerance > 0) {
+          this.bucketToolTolerance = tolerance > 100 ? 100 : tolerance;
+        }
       }
     }, {
       key: "toggleBucketTool",
@@ -673,17 +640,11 @@
     }, {
       key: "clear",
       value: function clear() {
-        var _ref5 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-            onlyCanvas = _ref5.onlyCanvas;
-
         this.context.clearRect(0, 0, this.width, this.height);
-
-        if (!onlyCanvas) {
-          this.lastPath = [];
-          this.positions = [];
-          this.handleEndDrawing();
-          this.setBackground(this.backgroundColor);
-        }
+        this.lastPath = [];
+        this.positions = [];
+        this.setBackground(this.backgroundColor);
+        this.handleEndDrawing();
       }
     }, {
       key: "save",
@@ -693,15 +654,15 @@
     }, {
       key: "restore",
       value: function restore(backup, callback) {
-        var _this8 = this;
+        var _this7 = this;
 
         var image = new Image();
         image.src = backup;
 
         image.onload = function () {
-          _this8.imageRestored = true;
+          _this7.imageRestored = true;
 
-          _this8.context.drawImage(image, 0, 0);
+          _this7.context.drawImage(image, 0, 0);
 
           if (typeof callback === 'function') callback();
         };
@@ -709,33 +670,28 @@
     }, {
       key: "undo",
       value: function undo() {
-        console.log('undo');
         var lastSnapshot = this.snapshots[this.snapshots.length - 1];
         var goToSnapshot = this.snapshots[this.snapshots.length - 2];
 
         if (goToSnapshot) {
-          console.log('in goToSnapshot');
           this.restoreCanvasSnapshot(goToSnapshot);
           this.snapshots.pop();
           this.undos.push(lastSnapshot);
           this.undos = this.undos.splice(-Math.abs(this.maxSnapshots));
         } else {
-          console.warn('There are no more undos left.');
+          this.logWarning('There are no more undos left.');
         }
       }
     }, {
       key: "redo",
       value: function redo() {
-        console.log('redo');
-
         if (this.undos.length > 0) {
-          console.log('in redo > 0');
           var lastUndo = this.undos.pop();
           this.restoreCanvasSnapshot(lastUndo);
           this.snapshots.push(lastUndo);
           this.snapshots = this.snapshots.splice(-Math.abs(this.maxSnapshots));
         } else {
-          console.warn('There are no more redo left.');
+          this.logWarning('There are no more redo left.');
         }
       }
     }]);

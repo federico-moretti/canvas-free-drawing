@@ -5,20 +5,21 @@ export default class CanvasFreeDrawing {
       width = this.requiredParam('width'),
       height = this.requiredParam('height'),
       backgroundColor = [255, 255, 255],
-      lineWidth,
+      lineWidth = 5,
       strokeColor,
       disabled,
       showWarnings = false,
+      maxSnapshots = 10,
     } = params;
 
     this.elementId = elementId;
     this.canvas = document.getElementById(this.elementId);
     this.checkCanvasElement();
-    this.context = this.canvas.getContext('2d', { alpha: false });
+    this.context = this.canvas.getContext('2d');
     this.width = width;
     this.height = height;
 
-    this.maxSnapshots = 10;
+    this.maxSnapshots = maxSnapshots;
     this.snapshots = [];
     this.undos = [];
     this.positions = [];
@@ -27,7 +28,7 @@ export default class CanvasFreeDrawing {
     this.isDrawingModeEnabled = true;
     this.imageRestored = false;
 
-    this.lineWidth = lineWidth || 5;
+    this.lineWidth = lineWidth;
     this.strokeColor = this.validateColor(strokeColor, true);
     this.bucketToolColor = this.validateColor(strokeColor, true);
     this.bucketToolTolerance = 0;
@@ -63,8 +64,12 @@ export default class CanvasFreeDrawing {
 
     this.showWarnings = showWarnings;
 
+    // cache
+    this.isNodeColorEqualCache = [];
+
     this.setDimensions();
     this.setBackground(backgroundColor);
+    this.storeSnapshot();
 
     if (!disabled) this.enableDrawingMode();
   }
@@ -117,7 +122,7 @@ export default class CanvasFreeDrawing {
     if (event.button !== 0) return;
     const x = event.pageX - this.canvas.offsetLeft;
     const y = event.pageY - this.canvas.offsetTop;
-    this.drawPoint(x, y);
+    return this.drawPoint(x, y);
   }
 
   mouseMove(event) {
@@ -132,7 +137,7 @@ export default class CanvasFreeDrawing {
       const x = pageX - this.canvas.offsetLeft;
       const y = pageY - this.canvas.offsetTop;
       this.touchIdentifier = identifier;
-      this.drawPoint(x, y);
+      return this.drawPoint(x, y);
     }
   }
 
@@ -182,8 +187,7 @@ export default class CanvasFreeDrawing {
 
   drawPoint(x, y) {
     if (this.isBucketToolEnabled) {
-      this.fill(x, y, this.bucketToolColor, { tolerance: this.bucketToolTolerance });
-      return;
+      return this.fill(x, y, this.bucketToolColor, { tolerance: this.bucketToolTolerance });
     }
     this.isDrawing = true;
     this.storeDrawing(x, y, false);
@@ -246,13 +250,14 @@ export default class CanvasFreeDrawing {
       newColor = this.validateColor(newColor);
       if (this.positions.length === 0 && !this.imageRestored) {
         this.setBackground(newColor, false);
+        this.canvas.dispatchEvent(this.redrawEvent);
         return;
       }
+
       const imageData = this.context.getImageData(0, 0, this.width, this.height);
-      const data = imageData.data;
-      const targetColor = this.getNodeColor(x, y, data);
+      const newData = imageData.data;
+      const targetColor = this.getNodeColor(x, y, newData);
       if (this.isNodeColorEqual(targetColor, newColor, tolerance)) return;
-      // if (!this.isNodeColorEqual(nodeColor, targetColor)) return;
       const queue = [];
       queue.push([x, y]);
 
@@ -262,11 +267,11 @@ export default class CanvasFreeDrawing {
         let w = n;
         let e = n;
 
-        while (this.isNodeColorEqual(this.getNodeColor(w[0] - 1, w[1], data), targetColor, tolerance)) {
+        while (this.isNodeColorEqual(this.getNodeColor(w[0] - 1, w[1], newData), targetColor, tolerance)) {
           w = [w[0] - 1, w[1]];
         }
 
-        while (this.isNodeColorEqual(this.getNodeColor(e[0] + 1, e[1], data), targetColor, tolerance)) {
+        while (this.isNodeColorEqual(this.getNodeColor(e[0] + 1, e[1], newData), targetColor, tolerance)) {
           e = [e[0] + 1, e[1]];
         }
 
@@ -274,13 +279,13 @@ export default class CanvasFreeDrawing {
         const lastNode = e[0];
 
         for (let i = firstNode; i <= lastNode; i++) {
-          this.setNodeColor(i, w[1], newColor, data);
+          this.setNodeColor(i, w[1], newColor, newData);
 
-          if (this.isNodeColorEqual(this.getNodeColor(i, w[1] + 1, data), targetColor, tolerance)) {
+          if (this.isNodeColorEqual(this.getNodeColor(i, w[1] + 1, newData), targetColor, tolerance)) {
             queue.push([i, w[1] + 1]);
           }
 
-          if (this.isNodeColorEqual(this.getNodeColor(i, w[1] - 1, data), targetColor, tolerance)) {
+          if (this.isNodeColorEqual(this.getNodeColor(i, w[1] - 1, newData), targetColor, tolerance)) {
             queue.push([i, w[1] - 1]);
           }
         }
@@ -293,8 +298,7 @@ export default class CanvasFreeDrawing {
         this.positions.push({ isBucket: true, x, y, newColor, tolerance });
       }
 
-      this.storeSnapshot();
-      resolve();
+      resolve(true);
     });
   }
 
@@ -313,23 +317,29 @@ export default class CanvasFreeDrawing {
 
   // i = color 1; j = color 2; t = tolerance
   isNodeColorEqual(i, j, t) {
-    if (t) {
-      const percentT = (t / 255) * 100;
-      const diffRed = Math.abs(j[0] - i[0]);
-      const diffGreen = Math.abs(j[1] - i[1]);
-      const diffBlue = Math.abs(j[2] - i[2]);
-
-      const percentDiffRed = diffRed / 255;
-      const percentDiffGreen = diffGreen / 255;
-      const percentDiffBlue = diffBlue / 255;
-
-      const percentDiff = ((percentDiffRed + percentDiffGreen + percentDiffBlue) / 3) * 100;
-      return percentT >= percentDiff;
-    }
-
+    // const color1 = JSON.stringify(i);
+    // const color2 = JSON.stringify(j);
     const color1 = '' + i[0] + i[1] + i[2] + i[3];
     const color2 = '' + j[0] + j[1] + j[2] + j[3];
-    return color1 === color2;
+    t = t || 0;
+
+    if (this.isNodeColorEqualCache.hasOwnProperty(color1 + color2 + t)) {
+      return this.isNodeColorEqualCache[color1 + color2 + t];
+    }
+
+    const diffRed = Math.abs(j[0] - i[0]);
+    const diffGreen = Math.abs(j[1] - i[1]);
+    const diffBlue = Math.abs(j[2] - i[2]);
+
+    const percentDiffRed = diffRed / 255;
+    const percentDiffGreen = diffGreen / 255;
+    const percentDiffBlue = diffBlue / 255;
+
+    const percentDiff = ((percentDiffRed + percentDiffGreen + percentDiffBlue) / 3) * 100;
+    const result = t >= percentDiff;
+
+    this.isNodeColorEqualCache[color1 + color2 + t] = result;
+    return result;
   }
 
   getNodeColor(x, y, data) {
@@ -384,8 +394,8 @@ export default class CanvasFreeDrawing {
     new Promise(resolve => {
       const imageData = this.getCanvasSnapshot();
       this.snapshots.push(imageData);
-      if (this.snapshots.length > 10) {
-        this.snapshots.splice(-this.maxSnapshots);
+      if (this.snapshots.length > this.maxSnapshots) {
+        this.snapshots = this.snapshots.splice(-Math.abs(this.maxSnapshots));
       }
       resolve();
     });
@@ -439,7 +449,9 @@ export default class CanvasFreeDrawing {
   configBucketTool(params) {
     const { color = null, tolerance = null } = params;
     if (color) this.bucketToolColor = this.validateColor(color);
-    if (tolerance && tolerance > 0) this.bucketToolTolerance = tolerance;
+    if (tolerance && tolerance > 0) {
+      this.bucketToolTolerance = tolerance > 100 ? 100 : tolerance;
+    }
   }
 
   toggleBucketTool() {
@@ -462,8 +474,8 @@ export default class CanvasFreeDrawing {
     this.context.clearRect(0, 0, this.width, this.height);
     this.lastPath = [];
     this.positions = [];
-    this.handleEndDrawing();
     this.setBackground(this.backgroundColor);
+    this.handleEndDrawing();
   }
 
   save() {
@@ -481,7 +493,6 @@ export default class CanvasFreeDrawing {
   }
 
   undo() {
-    // TODO: this should work also on the first draw
     const lastSnapshot = this.snapshots[this.snapshots.length - 1];
     const goToSnapshot = this.snapshots[this.snapshots.length - 2];
     if (goToSnapshot) {

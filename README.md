@@ -4,6 +4,14 @@ Simple and straightforward package that allows you to free draw on a canvas html
 
 You can try it [here](https://fmoretti.com/canvas-free-drawing)!
 
+## Latest Update
+
+- **Added undo and redo function**: you can define the maximum undo allowed with `maxSnapshots` in the init.
+- Fixed issue #1
+- Optimized bucket tool, yet to be perfect
+- Bucket tool tolerance is now defined in percentage
+- Increased test coverage
+
 ## Features
 
 - Lightweight (~6KB minified)
@@ -11,6 +19,7 @@ You can try it [here](https://fmoretti.com/canvas-free-drawing)!
 - Bucket tool
 - Events
 - Touch support
+- Undo and redo
 
 ## Installing
 
@@ -57,9 +66,12 @@ Initialize the module.
 - **elementId**: string
 - **width**: integer
 - **height**: integer
-- lineWidth: integer
-- strokeColor: array(3)
-- backgroundColor: array(3)
+- lineWidth: integer, default: 5
+- strokeColor: array(3), default: [0, 0, 0]
+- backgroundColor: array(3), default: [255, 255, 255]
+- disabled: boolean, default: false
+- showWarnings: boolean, default: false
+- maxSnapshots: integer, default: 10
 
 #### `setLineWidth(pixels: integer)`
 
@@ -113,6 +125,14 @@ Save the canvas as base64 and returns a string - this method uses the native met
 #### `restore(data: string)`
 
 Restore the canvas from the string previously saved
+
+#### `undo()`
+
+Undo last action on the canvas
+
+#### `redo()`
+
+Redo last action on the canvas
 
 ### Notes
 
