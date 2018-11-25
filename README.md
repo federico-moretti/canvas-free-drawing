@@ -130,6 +130,8 @@ Restore the canvas from the string previously saved
 
 Undo last action on the canvas
 
+You can define the maximum undo and redo allowed with `maxSnapshots` in the initialization.
+
 #### `redo()`
 
 Redo last action on the canvas
