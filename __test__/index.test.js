@@ -53,7 +53,7 @@ describe('CanvasFreeDrawing', () => {
   });
 
   it('should show an error on a not valid color', () => {
-    cfd.validateColor('nice color');
+    cfd.toValidColor('nice color');
     expect(console.warn).toHaveBeenCalledWith(
       'Color is not valid! It must be an array with RGB values:  [0-255, 0-255, 0-255]'
     );
@@ -149,7 +149,14 @@ describe('CanvasFreeDrawing', () => {
     drawPoint({ x: 10, y: 10, color: [255, 0, 0] });
 
     const color = getNodeColor(10, 10, cfd);
-    expect(cfd.positions[0][0]).toEqual({ lineWidth: 5, moving: false, strokeColor: [255, 0, 0, 255], x: 10, y: 10 });
+    expect(cfd.positions[0][0]).toEqual({
+      isBucket: false,
+      lineWidth: 5,
+      moving: false,
+      strokeColor: [255, 0, 0, 255],
+      x: 10,
+      y: 10,
+    });
     expect(color).toEqual([255, 0, 0, 255]);
   });
 
@@ -160,7 +167,14 @@ describe('CanvasFreeDrawing', () => {
     cfd.touchEnd();
 
     const color = getNodeColor(10, 10, cfd);
-    expect(cfd.positions[0][0]).toEqual({ lineWidth: 5, moving: false, strokeColor: [255, 0, 0, 255], x: 10, y: 10 });
+    expect(cfd.positions[0][0]).toEqual({
+      isBucket: false,
+      lineWidth: 5,
+      moving: false,
+      strokeColor: [255, 0, 0, 255],
+      x: 10,
+      y: 10,
+    });
     expect(color).toEqual([255, 0, 0, 255]);
   });
 
@@ -172,8 +186,22 @@ describe('CanvasFreeDrawing', () => {
     cfd.mouseUp();
 
     const color = getNodeColor(15, 15, cfd);
-    expect(cfd.positions[0][0]).toEqual({ lineWidth: 5, moving: false, strokeColor: [0, 0, 0, 255], x: 10, y: 10 });
-    expect(cfd.positions[0][1]).toEqual({ lineWidth: 5, moving: true, strokeColor: [0, 0, 0, 255], x: 15, y: 15 });
+    expect(cfd.positions[0][0]).toEqual({
+      isBucket: false,
+      lineWidth: 5,
+      moving: false,
+      strokeColor: [0, 0, 0, 255],
+      x: 10,
+      y: 10,
+    });
+    expect(cfd.positions[0][1]).toEqual({
+      isBucket: false,
+      lineWidth: 5,
+      moving: true,
+      strokeColor: [0, 0, 0, 255],
+      x: 15,
+      y: 15,
+    });
     expect(color).toEqual([0, 0, 0, 255]);
   });
 
@@ -185,8 +213,22 @@ describe('CanvasFreeDrawing', () => {
     cfd.touchEnd();
 
     const color = getNodeColor(15, 15, cfd);
-    expect(cfd.positions[0][0]).toEqual({ lineWidth: 5, moving: false, strokeColor: [0, 0, 0, 255], x: 10, y: 10 });
-    expect(cfd.positions[0][1]).toEqual({ lineWidth: 5, moving: true, strokeColor: [0, 0, 0, 255], x: 15, y: 15 });
+    expect(cfd.positions[0][0]).toEqual({
+      isBucket: false,
+      lineWidth: 5,
+      moving: false,
+      strokeColor: [0, 0, 0, 255],
+      x: 10,
+      y: 10,
+    });
+    expect(cfd.positions[0][1]).toEqual({
+      isBucket: false,
+      lineWidth: 5,
+      moving: true,
+      strokeColor: [0, 0, 0, 255],
+      x: 15,
+      y: 15,
+    });
     expect(color).toEqual([0, 0, 0, 255]);
   });
 

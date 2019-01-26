@@ -136,7 +136,7 @@ You can define the maximum undo and redo allowed with `maxSnapshots` in the init
 
 Redo last action on the canvas
 
-### Notes
+### Notes 
 
 Colors must be set with an array with RGB values: [0-255, 0-255, 0-255].
 

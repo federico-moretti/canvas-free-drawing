@@ -4,15 +4,17 @@
   "description": "Simple, lightweight and straightforward package that allows you to free draw on a canvas html element.",
   "main": "cjs/index.js",
   "module": "src/index.js",
+  "types": "src/index.d.ts",
   "scripts": {
-    "dev:start": "concurrently \"nodemon --watch src/index.js --exec yarn build:umd\" \"browser-sync start --server --files 'umd/*.js' 'index.html'\"",
+    "dev:start": "concurrently \"tsc -w\" \"nodemon --watch src/index.js --exec yarn build:umd\" \"browser-sync start --server --files 'umd/*.js' 'index.html'\"",
     "dev:build": "nodemon --watch src/index.js --exec yarn build:umd",
     "dev:test": "jest --watchAll",
     "build:cjs": "babel --plugins transform-es2015-modules-commonjs src/index.js -o cjs/index.js",
     "build:umd": "rollup --config rollup.config.js",
     "minify:umd": "minify umd/canvas-free-drawing.js -o umd/canvas-free-drawing.min.js",
     "test": "jest --verbose true --coverage",
-    "prepare": "npm run test && npm run build:cjs && npm run build:umd && npm run minify:umd"
+    "prepare": "npm run test && npm run build:cjs && npm run build:umd && npm run minify:umd",
+    "tsc": "tsc"
   },
   "author": "Federico Moretti",
   "license": "MIT",
@@ -21,6 +23,7 @@
     "drawing",
     "free-draw",
     "lightweight",
+    "typescript",
     "no-dependencies"
   ],
   "devDependencies": {
@@ -43,7 +46,8 @@
     "regenerator-runtime": "^0.12.1",
     "rollup": "^0.66.6",
     "rollup-plugin-babel": "^4.0.3",
-    "rollup-plugin-node-resolve": "^3.4.0"
+    "rollup-plugin-node-resolve": "^3.4.0",
+    "typescript": "^3.2.2"
   },
   "repository": {
     "type": "git",
