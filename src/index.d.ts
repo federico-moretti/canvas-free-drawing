@@ -1,4 +1,7 @@
 declare type Color = number[];
+interface BaseObject {
+    [key: string]: any;
+}
 interface Position {
     y: number;
     x: number;
@@ -19,6 +22,9 @@ interface Parameters {
     disabled: string;
     showWarnings: boolean;
     maxSnapshots: number;
+}
+interface NodeColorCache {
+    [key: string]: boolean;
 }
 export default class CanvasFreeDrawing {
     elementId: string | void;
@@ -45,28 +51,35 @@ export default class CanvasFreeDrawing {
     allowedEvents: string[];
     redrawCounter: number;
     dispatchEventsOnceEvery: number;
-    redrawEvent: Event;
-    mouseUpEvent: Event;
-    mouseDownEvent: Event;
-    mouseEnterEvent: Event;
-    mouseLeaveEvent: Event;
-    touchStartEvent: Event;
-    touchEndEvent: Event;
+    events: {
+        [key: string]: Event;
+    };
+    bindings: {
+        mouseDown: (event: MouseEvent) => void;
+        mouseMove: (event: MouseEvent) => void;
+        mouseLeave: (event: MouseEvent) => void;
+        mouseUp: (event: MouseEvent) => void;
+        mouseUpDocument: (event: MouseEvent) => void;
+        touchStart: (event: TouchEvent) => void;
+        touchMove: (event: TouchEvent) => void;
+        touchEnd: (event: MouseEvent) => void;
+        [name: string]: any;
+    };
     touchIdentifier?: number;
     previousX?: number;
     previousY?: number;
     showWarnings: boolean;
-    isNodeColorEqualCache: never[];
+    isNodeColorEqualCache: NodeColorCache;
     constructor(params: Parameters);
-    requiredParam(object: object, param: string): void;
+    requiredParam(object: BaseObject, param: string): void;
     logWarning(...args: string[]): void;
     addListeners(): void;
     removeListeners(): void;
     enableDrawingMode(): boolean;
     disableDrawingMode(): boolean;
-    mouseDown(event: MouseEvent): Promise<{}> | undefined;
+    mouseDown(event: MouseEvent): void;
     mouseMove(event: MouseEvent): void;
-    touchStart(event: TouchEvent): Promise<{}> | undefined;
+    touchStart(event: TouchEvent): void;
     touchMove(event: TouchEvent): void;
     touchEnd(): void;
     mouseUp(): void;
@@ -74,16 +87,16 @@ export default class CanvasFreeDrawing {
     mouseLeave(): void;
     mouseEnter(): void;
     handleEndDrawing(): void;
-    drawPoint(x: number, y: number): Promise<{}> | undefined;
+    drawPoint(x: number, y: number): void;
     drawLine(x: number, y: number, event: MouseEvent | TouchEvent): void;
-    handleDrawing(dispatchEventsOnceEvery: number): void;
+    handleDrawing(dispatchEventsOnceEvery?: number): void;
     draw(position: Position[]): void;
     fill(x: number, y: number, newColor: Color, { tolerance }: {
         tolerance: number;
-    }): Promise<{}>;
+    }): void;
     toValidColor(color: Color): Color;
-    isNodeColorEqual(i: Color, j: Color, t: number): any;
-    getNodeColor(x: number, y: number, data: Uint8ClampedArray): number[];
+    isNodeColorEqual(i: Color, j: Color, t: number): boolean;
+    getNodeColor(x: number, y: number, data: Uint8ClampedArray): Color;
     setNodeColor(x: number, y: number, color: Color, data: Uint8ClampedArray): void;
     rgbaFromArray(a: Color): string;
     setDimensions(): void;

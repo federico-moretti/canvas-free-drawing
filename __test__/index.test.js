@@ -97,52 +97,68 @@ describe('CanvasFreeDrawing', () => {
     expect(cfd.leftCanvasDrawing).toBeFalsy();
   });
 
-  it('should use floodfill', async () => {
-    const clickEvent = { button: 0, pageX: 100, pageY: 100 };
+  it('should use floodfill', done => {
+    let countEvents = 0;
+    cfd.on({ event: 'redraw' }, () => {
+      countEvents += 1;
+
+      // the fill is on the 6th event
+      if (countEvents === 6) {
+        const colorLine = getNodeColor(100, 100, cfd);
+        const colorFill = getNodeColor(150, 150, cfd);
+        expect(colorLine).toEqual([0, 0, 0, 255]); // check lines
+        expect(colorFill).toEqual([255, 0, 255, 255]); // check fill
+
+        done();
+      }
+    });
+
+    cfd.mouseDown({ button: 0, pageX: 100, pageY: 100 });
     const moveEvents = [
       { button: 0, pageX: 300, pageY: 100 },
       { button: 0, pageX: 300, pageY: 300 },
       { button: 0, pageX: 100, pageY: 300 },
       { button: 0, pageX: 100, pageY: 100 },
     ];
-
-    cfd.mouseDown(clickEvent);
     moveEvents.forEach(event => cfd.mouseMove(event));
 
     cfd.configBucketTool({ color: [255, 0, 255] });
     cfd.toggleBucketTool();
     expect(cfd.isBucketToolEnabled).toBe(true);
 
-    await drawPoint({ x: 150, y: 150, color: [255, 0, 255] }); // simulate click
-    const colorLine = getNodeColor(100, 100, cfd);
-    const colorFill = getNodeColor(150, 150, cfd);
-    expect(colorLine).toEqual([0, 0, 0, 255]); // check lines
-    expect(colorFill).toEqual([255, 0, 255, 255]); // check fill
+    cfd.mouseDown({ button: 0, pageX: 150, pageY: 150 });
   });
 
-  it('should use floodfill with tolerance', async () => {
-    const clickEvent = { button: 0, pageX: 100, pageY: 100 };
+  it('should use floodfill with tolerance', done => {
+    let countEvents = 0;
+    cfd.on({ event: 'redraw' }, () => {
+      countEvents += 1;
+
+      // the fill is on the 6th event
+      if (countEvents === 6) {
+        const colorLine = getNodeColor(100, 100, cfd);
+        const colorFill = getNodeColor(150, 150, cfd);
+        expect(colorLine).toEqual([0, 0, 0, 255]); // check lines
+        expect(colorFill).toEqual([255, 0, 255, 255]); // check fill
+
+        done();
+      }
+    });
+
+    cfd.mouseDown({ button: 0, pageX: 100, pageY: 100 });
     const moveEvents = [
       { button: 0, pageX: 300, pageY: 100 },
       { button: 0, pageX: 300, pageY: 300 },
       { button: 0, pageX: 100, pageY: 300 },
       { button: 0, pageX: 100, pageY: 100 },
     ];
-
-    cfd.mouseDown(clickEvent);
     moveEvents.forEach(event => cfd.mouseMove(event));
 
     cfd.configBucketTool({ tolerance: 0, color: [255, 0, 255] });
     cfd.toggleBucketTool();
     expect(cfd.isBucketToolEnabled).toBe(true);
 
-    const didDraw = await drawPoint({ x: 150, y: 150, color: [255, 0, 255] }); // simulate click
-    expect(didDraw).toBe(true);
-
-    const colorLine = getNodeColor(100, 100, cfd);
-    const colorFill = getNodeColor(150, 150, cfd);
-    expect(colorLine).toEqual([0, 0, 0, 255]); // check lines
-    expect(colorFill).toEqual([255, 0, 255, 255]); // check fill
+    cfd.mouseDown({ button: 0, pageX: 150, pageY: 150 });
   });
 
   it('should draw a red point', () => {
@@ -247,6 +263,16 @@ describe('CanvasFreeDrawing', () => {
     cfd.on({ event: 'redraw' }, () => done());
     const event1 = { button: 0, pageX: 100, pageY: 100 };
     cfd.mouseDown(event1);
+  });
+
+  it('should fire redraw event with debounce - multiple clicks', () => {
+    const countRedraws = jest.fn();
+    cfd.on({ event: 'redraw', counter: 10 }, countRedraws);
+
+    cfd.mouseDown({ button: 0, pageX: 150, pageY: 150 });
+    cfd.mouseDown({ button: 0, pageX: 100, pageY: 100 });
+
+    expect(countRedraws.mock.calls.length).toBe(2);
   });
 
   it('should fire redraw event with debounce - only click', () => {

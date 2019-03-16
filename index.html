@@ -72,7 +72,7 @@
   <script>
     const cfd = new CanvasFreeDrawing({ elementId: 'cfd', width: 500, height: 500, showWarnings: true });
     const redrawCount = document.getElementById('redraw-count');
-    cfd.on({ event: 'redraw', counter: 10 }, () => {
+    cfd.on({ event: 'redraw', counter: 0 }, () => {
       redrawCount.innerText = parseInt(redrawCount.innerText) + 1;
     });
     const textarea = document.getElementById('backup');

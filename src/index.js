@@ -1,6 +1,6 @@
+var noop = function () { };
 var CanvasFreeDrawing = /** @class */ (function () {
     function CanvasFreeDrawing(params) {
-        this.isNodeColorEqualCache = [];
         var elementId = params.elementId, width = params.width, height = params.height, _a = params.backgroundColor, backgroundColor = _a === void 0 ? [255, 255, 255] : _a, _b = params.lineWidth, lineWidth = _b === void 0 ? 5 : _b, strokeColor = params.strokeColor, disabled = params.disabled, _c = params.showWarnings, showWarnings = _c === void 0 ? false : _c, _d = params.maxSnapshots, maxSnapshots = _d === void 0 ? 10 : _d;
         this.requiredParam(params, 'elementId');
         this.requiredParam(params, 'width');
@@ -39,28 +39,40 @@ var CanvasFreeDrawing = /** @class */ (function () {
         this.redrawCounter = 0;
         this.dispatchEventsOnceEvery = 0; // this may become something like: [{event, counter}]
         // initialize events
-        this.redrawEvent = new Event('cfd_redraw');
-        this.mouseUpEvent = new Event('cfd_mouseup');
-        this.mouseDownEvent = new Event('cfd_mousedown');
-        this.mouseEnterEvent = new Event('cfd_mouseenter');
-        this.mouseLeaveEvent = new Event('cfd_mouseleave');
-        this.touchStartEvent = new Event('cfd_touchstart');
-        this.touchEndEvent = new Event('cfd_touchend');
+        this.events = {
+            redrawEvent: new Event('cfd_redraw'),
+            mouseUpEvent: new Event('cfd_mouseup'),
+            mouseDownEvent: new Event('cfd_mousedown'),
+            mouseEnterEvent: new Event('cfd_mouseenter'),
+            mouseLeaveEvent: new Event('cfd_mouseleave'),
+            touchStartEvent: new Event('cfd_touchstart'),
+            touchEndEvent: new Event('cfd_touchend')
+        };
+        this.bindings = {
+            mouseDown: this.mouseDown.bind(this),
+            mouseMove: this.mouseMove.bind(this),
+            mouseLeave: this.mouseLeave.bind(this),
+            mouseUp: this.mouseUp.bind(this),
+            mouseUpDocument: this.mouseUpDocument.bind(this),
+            touchStart: this.touchStart.bind(this),
+            touchMove: this.touchMove.bind(this),
+            touchEnd: this.touchEnd.bind(this)
+        };
         // these are needed to remove the listener
-        this.mouseDown = this.mouseDown.bind(this);
-        this.mouseMove = this.mouseMove.bind(this);
-        this.mouseLeave = this.mouseLeave.bind(this);
-        this.mouseUp = this.mouseUp.bind(this);
-        this.mouseUpDocument = this.mouseUpDocument.bind(this);
-        this.touchStart = this.touchStart.bind(this);
-        this.touchMove = this.touchMove.bind(this);
-        this.touchEnd = this.touchEnd.bind(this);
+        // this.mouseDown = this.mouseDown.bind(this);
+        // this.mouseMove = this.mouseMove.bind(this);
+        // this.mouseLeave = this.mouseLeave.bind(this);
+        // this.mouseUp = this.mouseUp.bind(this);
+        // this.mouseUpDocument = this.mouseUpDocument.bind(this);
+        // this.touchStart = this.touchStart.bind(this);
+        // this.touchMove = this.touchMove.bind(this);
+        // this.touchEnd = this.touchEnd.bind(this);
         this.touchIdentifier = undefined;
         this.previousX = undefined;
         this.previousY = undefined;
         this.showWarnings = showWarnings;
         // cache
-        this.isNodeColorEqualCache = [];
+        this.isNodeColorEqualCache = {};
         this.setDimensions();
         this.setBackground(backgroundColor);
         this.storeSnapshot();
@@ -83,16 +95,16 @@ var CanvasFreeDrawing = /** @class */ (function () {
     CanvasFreeDrawing.prototype.addListeners = function () {
         var _this = this;
         this.listenersList.forEach(function (event) {
-            _this.canvas.addEventListener(event.toLowerCase(), _this[event]);
+            _this.canvas.addEventListener(event.toLowerCase(), _this.bindings[event]);
         });
-        document.addEventListener('mouseup', this.mouseUpDocument);
+        document.addEventListener('mouseup', this.bindings.mouseUpDocument);
     };
     CanvasFreeDrawing.prototype.removeListeners = function () {
         var _this = this;
         this.listenersList.forEach(function (event) {
-            _this.canvas.removeEventListener(event.toLowerCase(), _this[event]);
+            _this.canvas.removeEventListener(event.toLowerCase(), _this.bindings[event]);
         });
-        document.removeEventListener('mouseup', this.mouseUpDocument);
+        document.removeEventListener('mouseup', this.bindings.mouseUpDocument);
     };
     CanvasFreeDrawing.prototype.enableDrawingMode = function () {
         this.isDrawingModeEnabled = true;
@@ -111,7 +123,7 @@ var CanvasFreeDrawing = /** @class */ (function () {
             return;
         var x = event.pageX - this.canvas.offsetLeft;
         var y = event.pageY - this.canvas.offsetTop;
-        return this.drawPoint(x, y);
+        this.drawPoint(x, y);
     };
     CanvasFreeDrawing.prototype.mouseMove = function (event) {
         var x = event.pageX - this.canvas.offsetLeft;
@@ -124,7 +136,7 @@ var CanvasFreeDrawing = /** @class */ (function () {
             var x = pageX - this.canvas.offsetLeft;
             var y = pageY - this.canvas.offsetTop;
             this.touchIdentifier = identifier;
-            return this.drawPoint(x, y);
+            this.drawPoint(x, y);
         }
     };
     CanvasFreeDrawing.prototype.touchMove = function (event) {
@@ -142,11 +154,11 @@ var CanvasFreeDrawing = /** @class */ (function () {
     };
     CanvasFreeDrawing.prototype.touchEnd = function () {
         this.handleEndDrawing();
-        this.canvas.dispatchEvent(this.touchEndEvent);
+        this.canvas.dispatchEvent(this.events.touchEndEvent);
     };
     CanvasFreeDrawing.prototype.mouseUp = function () {
         this.handleEndDrawing();
-        this.canvas.dispatchEvent(this.mouseUpEvent);
+        this.canvas.dispatchEvent(this.events.mouseUpEvent);
     };
     CanvasFreeDrawing.prototype.mouseUpDocument = function () {
         this.leftCanvasDrawing = false;
@@ -155,10 +167,10 @@ var CanvasFreeDrawing = /** @class */ (function () {
         if (this.isDrawing)
             this.leftCanvasDrawing = true;
         this.isDrawing = false;
-        this.canvas.dispatchEvent(this.mouseLeaveEvent);
+        this.canvas.dispatchEvent(this.events.mouseLeaveEvent);
     };
     CanvasFreeDrawing.prototype.mouseEnter = function () {
-        this.canvas.dispatchEvent(this.mouseEnterEvent);
+        this.canvas.dispatchEvent(this.events.mouseEnterEvent);
     };
     CanvasFreeDrawing.prototype.handleEndDrawing = function () {
         this.isDrawing = false;
@@ -166,12 +178,12 @@ var CanvasFreeDrawing = /** @class */ (function () {
     };
     CanvasFreeDrawing.prototype.drawPoint = function (x, y) {
         if (this.isBucketToolEnabled) {
-            return this.fill(x, y, this.bucketToolColor, { tolerance: this.bucketToolTolerance });
+            this.fill(x, y, this.bucketToolColor, { tolerance: this.bucketToolTolerance });
         }
         this.isDrawing = true;
         this.storeDrawing(x, y, false);
-        this.canvas.dispatchEvent(this.mouseDownEvent);
-        this.handleDrawing(this.dispatchEventsOnceEvery);
+        this.canvas.dispatchEvent(this.events.mouseDownEvent);
+        this.handleDrawing();
     };
     CanvasFreeDrawing.prototype.drawLine = function (x, y, event) {
         if (this.leftCanvasDrawing) {
@@ -200,10 +212,10 @@ var CanvasFreeDrawing = /** @class */ (function () {
             }
         });
         if (!dispatchEventsOnceEvery) {
-            this.canvas.dispatchEvent(this.redrawEvent);
+            this.canvas.dispatchEvent(this.events.redrawEvent);
         }
         else if (this.redrawCounter % dispatchEventsOnceEvery === 0) {
-            this.canvas.dispatchEvent(this.redrawEvent);
+            this.canvas.dispatchEvent(this.events.redrawEvent);
         }
         this.undos = [];
         this.redrawCounter += 1;
@@ -226,50 +238,46 @@ var CanvasFreeDrawing = /** @class */ (function () {
     };
     // https://en.wikipedia.org/wiki/Flood_fill
     CanvasFreeDrawing.prototype.fill = function (x, y, newColor, _a) {
-        var _this = this;
         var tolerance = _a.tolerance;
-        return new Promise(function (resolve) {
-            newColor = _this.toValidColor(newColor);
-            if (_this.positions.length === 0 && !_this.imageRestored) {
-                _this.setBackground(newColor, false);
-                _this.canvas.dispatchEvent(_this.redrawEvent);
-                return;
+        newColor = this.toValidColor(newColor);
+        if (this.positions.length === 0 && !this.imageRestored) {
+            this.setBackground(newColor, false);
+            this.canvas.dispatchEvent(this.events.redrawEvent);
+            return;
+        }
+        var imageData = this.context.getImageData(0, 0, this.width, this.height);
+        var newData = imageData.data;
+        var targetColor = this.getNodeColor(x, y, newData);
+        if (this.isNodeColorEqual(targetColor, newColor, tolerance))
+            return;
+        var queue = [];
+        queue.push([x, y]);
+        while (queue.length) {
+            if (queue.length > this.width * this.height)
+                break;
+            var n = queue.pop();
+            var w = n;
+            var e = n;
+            while (this.isNodeColorEqual(this.getNodeColor(w[0] - 1, w[1], newData), targetColor, tolerance)) {
+                w = [w[0] - 1, w[1]];
             }
-            var imageData = _this.context.getImageData(0, 0, _this.width, _this.height);
-            var newData = imageData.data;
-            var targetColor = _this.getNodeColor(x, y, newData);
-            if (_this.isNodeColorEqual(targetColor, newColor, tolerance))
-                return;
-            var queue = [];
-            queue.push([x, y]);
-            while (queue.length) {
-                if (queue.length > _this.width * _this.height)
-                    break;
-                var n = queue.pop();
-                var w = n;
-                var e = n;
-                while (_this.isNodeColorEqual(_this.getNodeColor(w[0] - 1, w[1], newData), targetColor, tolerance)) {
-                    w = [w[0] - 1, w[1]];
+            while (this.isNodeColorEqual(this.getNodeColor(e[0] + 1, e[1], newData), targetColor, tolerance)) {
+                e = [e[0] + 1, e[1]];
+            }
+            var firstNode = w[0];
+            var lastNode = e[0];
+            for (var i = firstNode; i <= lastNode; i++) {
+                this.setNodeColor(i, w[1], newColor, newData);
+                if (this.isNodeColorEqual(this.getNodeColor(i, w[1] + 1, newData), targetColor, tolerance)) {
+                    queue.push([i, w[1] + 1]);
                 }
-                while (_this.isNodeColorEqual(_this.getNodeColor(e[0] + 1, e[1], newData), targetColor, tolerance)) {
-                    e = [e[0] + 1, e[1]];
-                }
-                var firstNode = w[0];
-                var lastNode = e[0];
-                for (var i = firstNode; i <= lastNode; i++) {
-                    _this.setNodeColor(i, w[1], newColor, newData);
-                    if (_this.isNodeColorEqual(_this.getNodeColor(i, w[1] + 1, newData), targetColor, tolerance)) {
-                        queue.push([i, w[1] + 1]);
-                    }
-                    if (_this.isNodeColorEqual(_this.getNodeColor(i, w[1] - 1, newData), targetColor, tolerance)) {
-                        queue.push([i, w[1] - 1]);
-                    }
+                if (this.isNodeColorEqual(this.getNodeColor(i, w[1] - 1, newData), targetColor, tolerance)) {
+                    queue.push([i, w[1] - 1]);
                 }
             }
-            _this.context.putImageData(imageData, 0, 0);
-            _this.canvas.dispatchEvent(_this.redrawEvent);
-            resolve(true);
-        });
+        }
+        this.context.putImageData(imageData, 0, 0);
+        this.canvas.dispatchEvent(this.events.redrawEvent);
     };
     CanvasFreeDrawing.prototype.toValidColor = function (color) {
         if (Array.isArray(color) && color.length === 4)
@@ -353,15 +361,11 @@ var CanvasFreeDrawing = /** @class */ (function () {
         }
     };
     CanvasFreeDrawing.prototype.storeSnapshot = function () {
-        var _this = this;
-        new Promise(function (resolve) {
-            var imageData = _this.getCanvasSnapshot();
-            _this.snapshots.push(imageData);
-            if (_this.snapshots.length > _this.maxSnapshots) {
-                _this.snapshots = _this.snapshots.splice(-Math.abs(_this.maxSnapshots));
-            }
-            resolve();
-        });
+        var imageData = this.getCanvasSnapshot();
+        this.snapshots.push(imageData);
+        if (this.snapshots.length > this.maxSnapshots) {
+            this.snapshots = this.snapshots.splice(-Math.abs(this.maxSnapshots));
+        }
     };
     CanvasFreeDrawing.prototype.getCanvasSnapshot = function () {
         return this.context.getImageData(0, 0, this.width, this.height);

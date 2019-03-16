@@ -2,6 +2,10 @@ type Color = number[];
 
 type Coordinates = number[];
 
+interface BaseObject {
+  [key: string]: any;
+}
+
 interface Position {
   y: number;
   x: number;
@@ -32,6 +36,12 @@ interface Parameters {
   maxSnapshots: number;
 }
 
+interface NodeColorCache {
+  [key: string]: boolean;
+}
+
+const noop = () => {};
+
 export default class CanvasFreeDrawing {
   elementId: string | void;
   canvasNode: HTMLElement | null;
@@ -58,20 +68,32 @@ export default class CanvasFreeDrawing {
   redrawCounter: number;
   dispatchEventsOnceEvery: number;
 
-  redrawEvent: Event;
-  mouseUpEvent: Event;
-  mouseDownEvent: Event;
-  mouseEnterEvent: Event;
-  mouseLeaveEvent: Event;
-  touchStartEvent: Event;
-  touchEndEvent: Event;
+  events: { [key: string]: Event };
+  bindings: {
+    mouseDown: (event: MouseEvent) => void;
+    mouseMove: (event: MouseEvent) => void;
+    mouseLeave: (event: MouseEvent) => void;
+    mouseUp: (event: MouseEvent) => void;
+    mouseUpDocument: (event: MouseEvent) => void;
+    touchStart: (event: TouchEvent) => void;
+    touchMove: (event: TouchEvent) => void;
+    touchEnd: (event: MouseEvent) => void;
+    [name: string]: any;
+  };
+  // redrawEvent: Event;
+  // mouseUpEvent: Event;
+  // mouseDownEvent: Event;
+  // mouseEnterEvent: Event;
+  // mouseLeaveEvent: Event;
+  // touchStartEvent: Event;
+  // touchEndEvent: Event;
 
   touchIdentifier?: number;
   previousX?: number;
   previousY?: number;
   showWarnings: boolean;
 
-  isNodeColorEqualCache = [];
+  isNodeColorEqualCache: NodeColorCache;
 
   constructor(params: Parameters) {
     const {
@@ -128,23 +150,36 @@ export default class CanvasFreeDrawing {
     this.dispatchEventsOnceEvery = 0; // this may become something like: [{event, counter}]
 
     // initialize events
-    this.redrawEvent = new Event('cfd_redraw');
-    this.mouseUpEvent = new Event('cfd_mouseup');
-    this.mouseDownEvent = new Event('cfd_mousedown');
-    this.mouseEnterEvent = new Event('cfd_mouseenter');
-    this.mouseLeaveEvent = new Event('cfd_mouseleave');
-    this.touchStartEvent = new Event('cfd_touchstart');
-    this.touchEndEvent = new Event('cfd_touchend');
+    this.events = {
+      redrawEvent: new Event('cfd_redraw'),
+      mouseUpEvent: new Event('cfd_mouseup'),
+      mouseDownEvent: new Event('cfd_mousedown'),
+      mouseEnterEvent: new Event('cfd_mouseenter'),
+      mouseLeaveEvent: new Event('cfd_mouseleave'),
+      touchStartEvent: new Event('cfd_touchstart'),
+      touchEndEvent: new Event('cfd_touchend'),
+    };
+
+    this.bindings = {
+      mouseDown: this.mouseDown.bind(this),
+      mouseMove: this.mouseMove.bind(this),
+      mouseLeave: this.mouseLeave.bind(this),
+      mouseUp: this.mouseUp.bind(this),
+      mouseUpDocument: this.mouseUpDocument.bind(this),
+      touchStart: this.touchStart.bind(this),
+      touchMove: this.touchMove.bind(this),
+      touchEnd: this.touchEnd.bind(this),
+    };
 
     // these are needed to remove the listener
-    this.mouseDown = this.mouseDown.bind(this);
-    this.mouseMove = this.mouseMove.bind(this);
-    this.mouseLeave = this.mouseLeave.bind(this);
-    this.mouseUp = this.mouseUp.bind(this);
-    this.mouseUpDocument = this.mouseUpDocument.bind(this);
-    this.touchStart = this.touchStart.bind(this);
-    this.touchMove = this.touchMove.bind(this);
-    this.touchEnd = this.touchEnd.bind(this);
+    // this.mouseDown = this.mouseDown.bind(this);
+    // this.mouseMove = this.mouseMove.bind(this);
+    // this.mouseLeave = this.mouseLeave.bind(this);
+    // this.mouseUp = this.mouseUp.bind(this);
+    // this.mouseUpDocument = this.mouseUpDocument.bind(this);
+    // this.touchStart = this.touchStart.bind(this);
+    // this.touchMove = this.touchMove.bind(this);
+    // this.touchEnd = this.touchEnd.bind(this);
 
     this.touchIdentifier = undefined;
     this.previousX = undefined;
@@ -153,7 +188,7 @@ export default class CanvasFreeDrawing {
     this.showWarnings = showWarnings;
 
     // cache
-    this.isNodeColorEqualCache = [];
+    this.isNodeColorEqualCache = {};
 
     this.setDimensions();
     this.setBackground(backgroundColor);
@@ -162,68 +197,68 @@ export default class CanvasFreeDrawing {
     if (!disabled) this.enableDrawingMode();
   }
 
-  requiredParam(object: object, param: string) {
-    if (!object || !(object as any)[param]) {
+  requiredParam(object: BaseObject, param: string): void {
+    if (!object || !object[param]) {
       throw new Error(`${param} is required`);
     }
   }
 
-  logWarning(...args: string[]) {
+  logWarning(...args: string[]): void {
     if (this.showWarnings) console.warn(...args);
   }
 
-  addListeners() {
+  addListeners(): void {
     this.listenersList.forEach(event => {
-      this.canvas.addEventListener(event.toLowerCase(), (this as any)[event]);
+      this.canvas.addEventListener(event.toLowerCase(), this.bindings[event]);
     });
-    document.addEventListener('mouseup', this.mouseUpDocument);
+    document.addEventListener('mouseup', this.bindings.mouseUpDocument);
   }
 
-  removeListeners() {
+  removeListeners(): void {
     this.listenersList.forEach(event => {
-      this.canvas.removeEventListener(event.toLowerCase(), (this as any)[event]);
+      this.canvas.removeEventListener(event.toLowerCase(), this.bindings[event]);
     });
-    document.removeEventListener('mouseup', this.mouseUpDocument);
+    document.removeEventListener('mouseup', this.bindings.mouseUpDocument);
   }
 
-  enableDrawingMode() {
+  enableDrawingMode(): boolean {
     this.isDrawingModeEnabled = true;
     this.addListeners();
     this.toggleCursor();
     return this.isDrawingModeEnabled;
   }
 
-  disableDrawingMode() {
+  disableDrawingMode(): boolean {
     this.isDrawingModeEnabled = false;
     this.removeListeners();
     this.toggleCursor();
     return this.isDrawingModeEnabled;
   }
 
-  mouseDown(event: MouseEvent) {
+  mouseDown(event: MouseEvent): void {
     if (event.button !== 0) return;
     const x = event.pageX - this.canvas.offsetLeft;
     const y = event.pageY - this.canvas.offsetTop;
-    return this.drawPoint(x, y);
+    this.drawPoint(x, y);
   }
 
-  mouseMove(event: MouseEvent) {
+  mouseMove(event: MouseEvent): void {
     const x = event.pageX - this.canvas.offsetLeft;
     const y = event.pageY - this.canvas.offsetTop;
     this.drawLine(x, y, event);
   }
 
-  touchStart(event: TouchEvent) {
+  touchStart(event: TouchEvent): void {
     if (event.changedTouches.length > 0) {
       const { pageX, pageY, identifier } = event.changedTouches[0];
       const x = pageX - this.canvas.offsetLeft;
       const y = pageY - this.canvas.offsetTop;
       this.touchIdentifier = identifier;
-      return this.drawPoint(x, y);
+      this.drawPoint(x, y);
     }
   }
 
-  touchMove(event: TouchEvent) {
+  touchMove(event: TouchEvent): void {
     if (event.changedTouches.length > 0) {
       const { pageX, pageY, identifier } = event.changedTouches[0];
       const x = pageX - this.canvas.offsetLeft;
@@ -238,48 +273,48 @@ export default class CanvasFreeDrawing {
     }
   }
 
-  touchEnd() {
+  touchEnd(): void {
     this.handleEndDrawing();
-    this.canvas.dispatchEvent(this.touchEndEvent);
+    this.canvas.dispatchEvent(this.events.touchEndEvent);
   }
 
-  mouseUp() {
+  mouseUp(): void {
     this.handleEndDrawing();
-    this.canvas.dispatchEvent(this.mouseUpEvent);
+    this.canvas.dispatchEvent(this.events.mouseUpEvent);
   }
 
-  mouseUpDocument() {
+  mouseUpDocument(): void {
     this.leftCanvasDrawing = false;
   }
 
-  mouseLeave() {
+  mouseLeave(): void {
     if (this.isDrawing) this.leftCanvasDrawing = true;
     this.isDrawing = false;
-    this.canvas.dispatchEvent(this.mouseLeaveEvent);
+    this.canvas.dispatchEvent(this.events.mouseLeaveEvent);
   }
 
-  mouseEnter() {
-    this.canvas.dispatchEvent(this.mouseEnterEvent);
+  mouseEnter(): void {
+    this.canvas.dispatchEvent(this.events.mouseEnterEvent);
   }
 
-  handleEndDrawing() {
+  handleEndDrawing(): void {
     this.isDrawing = false;
     this.storeSnapshot();
   }
 
-  drawPoint(x: number, y: number) {
+  drawPoint(x: number, y: number): void {
     if (this.isBucketToolEnabled) {
-      return this.fill(x, y, this.bucketToolColor, { tolerance: this.bucketToolTolerance });
+      this.fill(x, y, this.bucketToolColor, { tolerance: this.bucketToolTolerance });
     }
     this.isDrawing = true;
     this.storeDrawing(x, y, false);
 
-    this.canvas.dispatchEvent(this.mouseDownEvent);
+    this.canvas.dispatchEvent(this.events.mouseDownEvent);
 
-    this.handleDrawing(this.dispatchEventsOnceEvery);
+    this.handleDrawing();
   }
 
-  drawLine(x: number, y: number, event: MouseEvent | TouchEvent) {
+  drawLine(x: number, y: number, event: MouseEvent | TouchEvent): void {
     if (this.leftCanvasDrawing) {
       this.leftCanvasDrawing = false;
       if (event instanceof MouseEvent) {
@@ -295,7 +330,7 @@ export default class CanvasFreeDrawing {
     }
   }
 
-  handleDrawing(dispatchEventsOnceEvery: number) {
+  handleDrawing(dispatchEventsOnceEvery?: number): void {
     this.context.lineJoin = 'round';
     const positions = [[...this.positions].pop()];
 
@@ -308,16 +343,16 @@ export default class CanvasFreeDrawing {
     });
 
     if (!dispatchEventsOnceEvery) {
-      this.canvas.dispatchEvent(this.redrawEvent);
+      this.canvas.dispatchEvent(this.events.redrawEvent);
     } else if (this.redrawCounter % dispatchEventsOnceEvery === 0) {
-      this.canvas.dispatchEvent(this.redrawEvent);
+      this.canvas.dispatchEvent(this.events.redrawEvent);
     }
 
     this.undos = [];
     this.redrawCounter += 1;
   }
 
-  draw(position: Position[]) {
+  draw(position: Position[]): void {
     position.forEach(({ x, y, moving }, i) => {
       this.context.beginPath();
       if (moving && i) {
@@ -332,57 +367,53 @@ export default class CanvasFreeDrawing {
   }
 
   // https://en.wikipedia.org/wiki/Flood_fill
-  fill(x: number, y: number, newColor: Color, { tolerance }: { tolerance: number }) {
-    return new Promise(resolve => {
-      newColor = this.toValidColor(newColor);
-      if (this.positions.length === 0 && !this.imageRestored) {
-        this.setBackground(newColor, false);
-        this.canvas.dispatchEvent(this.redrawEvent);
-        return;
+  fill(x: number, y: number, newColor: Color, { tolerance }: { tolerance: number }): void {
+    newColor = this.toValidColor(newColor);
+    if (this.positions.length === 0 && !this.imageRestored) {
+      this.setBackground(newColor, false);
+      this.canvas.dispatchEvent(this.events.redrawEvent);
+      return;
+    }
+
+    const imageData = this.context.getImageData(0, 0, this.width, this.height);
+    const newData = imageData.data;
+    const targetColor = this.getNodeColor(x, y, newData);
+    if (this.isNodeColorEqual(targetColor, newColor, tolerance)) return;
+    const queue: Coordinates[] = [];
+    queue.push([x, y]);
+
+    while (queue.length) {
+      if (queue.length > this.width * this.height) break;
+      const n = queue.pop();
+      let w = <number[]>n;
+      let e = <number[]>n;
+
+      while (this.isNodeColorEqual(this.getNodeColor(w[0] - 1, w[1], newData), targetColor, tolerance)) {
+        w = [w[0] - 1, w[1]];
       }
 
-      const imageData = this.context.getImageData(0, 0, this.width, this.height);
-      const newData = imageData.data;
-      const targetColor = this.getNodeColor(x, y, newData);
-      if (this.isNodeColorEqual(targetColor, newColor, tolerance)) return;
-      const queue: Coordinates[] = [];
-      queue.push([x, y]);
-
-      while (queue.length) {
-        if (queue.length > this.width * this.height) break;
-        const n = queue.pop();
-        let w = <number[]>n;
-        let e = <number[]>n;
-
-        while (this.isNodeColorEqual(this.getNodeColor(w[0] - 1, w[1], newData), targetColor, tolerance)) {
-          w = [w[0] - 1, w[1]];
-        }
-
-        while (this.isNodeColorEqual(this.getNodeColor(e[0] + 1, e[1], newData), targetColor, tolerance)) {
-          e = [e[0] + 1, e[1]];
-        }
-
-        const firstNode = w[0];
-        const lastNode = e[0];
-
-        for (let i = firstNode; i <= lastNode; i++) {
-          this.setNodeColor(i, w[1], newColor, newData);
-
-          if (this.isNodeColorEqual(this.getNodeColor(i, w[1] + 1, newData), targetColor, tolerance)) {
-            queue.push([i, w[1] + 1]);
-          }
-
-          if (this.isNodeColorEqual(this.getNodeColor(i, w[1] - 1, newData), targetColor, tolerance)) {
-            queue.push([i, w[1] - 1]);
-          }
-        }
+      while (this.isNodeColorEqual(this.getNodeColor(e[0] + 1, e[1], newData), targetColor, tolerance)) {
+        e = [e[0] + 1, e[1]];
       }
 
-      this.context.putImageData(imageData, 0, 0);
-      this.canvas.dispatchEvent(this.redrawEvent);
+      const firstNode = w[0];
+      const lastNode = e[0];
 
-      resolve(true);
-    });
+      for (let i = firstNode; i <= lastNode; i++) {
+        this.setNodeColor(i, w[1], newColor, newData);
+
+        if (this.isNodeColorEqual(this.getNodeColor(i, w[1] + 1, newData), targetColor, tolerance)) {
+          queue.push([i, w[1] + 1]);
+        }
+
+        if (this.isNodeColorEqual(this.getNodeColor(i, w[1] - 1, newData), targetColor, tolerance)) {
+          queue.push([i, w[1] - 1]);
+        }
+      }
+    }
+
+    this.context.putImageData(imageData, 0, 0);
+    this.canvas.dispatchEvent(this.events.redrawEvent);
   }
 
   toValidColor(color: Color): Color {
@@ -398,7 +429,7 @@ export default class CanvasFreeDrawing {
   }
 
   // i = color 1; j = color 2; t = tolerance
-  isNodeColorEqual(i: Color, j: Color, t: number) {
+  isNodeColorEqual(i: Color, j: Color, t: number): boolean {
     // const color1 = JSON.stringify(i);
     // const color2 = JSON.stringify(j);
     const color1 = '' + i[0] + i[1] + i[2] + i[3];
@@ -407,7 +438,7 @@ export default class CanvasFreeDrawing {
     t = t || 0;
 
     if (this.isNodeColorEqualCache.hasOwnProperty(color1 + color2 + t)) {
-      return (this.isNodeColorEqualCache as any)[key];
+      return this.isNodeColorEqualCache[key];
     }
 
     const diffRed = Math.abs(j[0] - i[0]);
@@ -421,16 +452,16 @@ export default class CanvasFreeDrawing {
     const percentDiff = ((percentDiffRed + percentDiffGreen + percentDiffBlue) / 3) * 100;
     const result = t >= percentDiff;
 
-    (this.isNodeColorEqualCache as any)[key] = result;
+    this.isNodeColorEqualCache[key] = result;
     return result;
   }
 
-  getNodeColor(x: number, y: number, data: Uint8ClampedArray) {
+  getNodeColor(x: number, y: number, data: Uint8ClampedArray): Color {
     const i = (x + y * this.width) * 4;
     return [data[i], data[i + 1], data[i + 2], data[i + 3]];
   }
 
-  setNodeColor(x: number, y: number, color: Color, data: Uint8ClampedArray) {
+  setNodeColor(x: number, y: number, color: Color, data: Uint8ClampedArray): void {
     const i = (x + y * this.width) * 4;
     data[i] = color[0];
     data[i + 1] = color[1];
@@ -438,20 +469,20 @@ export default class CanvasFreeDrawing {
     data[i + 3] = color[3];
   }
 
-  rgbaFromArray(a: Color) {
+  rgbaFromArray(a: Color): string {
     return `rgba(${a[0]},${a[1]},${a[2]},${a[3]})`;
   }
 
-  setDimensions() {
+  setDimensions(): void {
     this.canvas.height = this.height;
     this.canvas.width = this.width;
   }
 
-  toggleCursor() {
+  toggleCursor(): void {
     this.canvas.style.cursor = this.isDrawingModeEnabled ? 'crosshair' : 'auto';
   }
 
-  storeDrawing(x: number, y: number, moving: boolean) {
+  storeDrawing(x: number, y: number, moving: boolean): void {
     if (moving) {
       const lastIndex = this.positions.length - 1;
       (this.positions[lastIndex] as Position[]).push({
@@ -476,28 +507,25 @@ export default class CanvasFreeDrawing {
     }
   }
 
-  storeSnapshot() {
-    new Promise(resolve => {
-      const imageData = this.getCanvasSnapshot();
-      this.snapshots.push(imageData);
-      if (this.snapshots.length > this.maxSnapshots) {
-        this.snapshots = this.snapshots.splice(-Math.abs(this.maxSnapshots));
-      }
-      resolve();
-    });
+  storeSnapshot(): void {
+    const imageData = this.getCanvasSnapshot();
+    this.snapshots.push(imageData);
+    if (this.snapshots.length > this.maxSnapshots) {
+      this.snapshots = this.snapshots.splice(-Math.abs(this.maxSnapshots));
+    }
   }
 
-  getCanvasSnapshot() {
+  getCanvasSnapshot(): ImageData {
     return this.context.getImageData(0, 0, this.width, this.height);
   }
 
-  restoreCanvasSnapshot(imageData: ImageData) {
+  restoreCanvasSnapshot(imageData: ImageData): void {
     this.context.putImageData(imageData, 0, 0);
   }
 
   // Public APIs
 
-  on(params: { event: string; counter?: number }, callback: Function) {
+  on(params: { event: string; counter?: number }, callback: Function): void {
     const { event, counter } = params;
     this.requiredParam(params, 'event');
 
@@ -511,11 +539,11 @@ export default class CanvasFreeDrawing {
     }
   }
 
-  setLineWidth(px: number) {
+  setLineWidth(px: number): void {
     this.lineWidth = px;
   }
 
-  setBackground(color: Color, save = true) {
+  setBackground(color: Color, save = true): void {
     const validColor = this.toValidColor(color);
     if (validColor) {
       if (save) this.backgroundColor = validColor;
@@ -524,16 +552,16 @@ export default class CanvasFreeDrawing {
     }
   }
 
-  setDrawingColor(color: Color) {
+  setDrawingColor(color: Color): void {
     this.configBucketTool({ color });
     this.setStrokeColor(color);
   }
 
-  setStrokeColor(color: Color) {
+  setStrokeColor(color: Color): void {
     this.strokeColor = this.toValidColor(color);
   }
 
-  configBucketTool(params: { color?: Color; tolerance?: number }) {
+  configBucketTool(params: { color?: Color; tolerance?: number }): void {
     const { color = null, tolerance = null } = params;
     if (color) this.bucketToolColor = this.toValidColor(color);
     if (tolerance && tolerance > 0) {
@@ -541,26 +569,26 @@ export default class CanvasFreeDrawing {
     }
   }
 
-  toggleBucketTool() {
+  toggleBucketTool(): boolean {
     return (this.isBucketToolEnabled = !this.isBucketToolEnabled);
   }
 
-  toggleDrawingMode() {
+  toggleDrawingMode(): boolean {
     return this.isDrawingModeEnabled ? this.disableDrawingMode() : this.enableDrawingMode();
   }
 
-  clear() {
+  clear(): void {
     this.context.clearRect(0, 0, this.width, this.height);
     this.positions = [];
     if (this.backgroundColor) this.setBackground(this.backgroundColor);
     this.handleEndDrawing();
   }
 
-  save() {
+  save(): string {
     return this.canvas.toDataURL();
   }
 
-  restore(backup: string, callback: Function) {
+  restore(backup: string, callback: Function): void {
     const image = new Image();
     image.src = backup;
     image.onload = () => {
@@ -570,7 +598,7 @@ export default class CanvasFreeDrawing {
     };
   }
 
-  undo() {
+  undo(): void {
     const lastSnapshot = this.snapshots[this.snapshots.length - 1];
     const goToSnapshot = this.snapshots[this.snapshots.length - 2];
     if (goToSnapshot) {
@@ -583,7 +611,7 @@ export default class CanvasFreeDrawing {
     }
   }
 
-  redo() {
+  redo(): void {
     if (this.undos.length > 0) {
       const lastUndo = this.undos.pop();
       if (lastUndo) {

@@ -9,12 +9,14 @@
     "dev:start": "concurrently \"tsc -w\" \"nodemon --watch src/index.js --exec yarn build:umd\" \"browser-sync start --server --files 'umd/*.js' 'index.html'\"",
     "dev:build": "nodemon --watch src/index.js --exec yarn build:umd",
     "dev:test": "jest --watchAll",
+    "dev:ts": "tsc -w",
+    "build:ts": "tsc",
     "build:cjs": "babel --plugins transform-es2015-modules-commonjs src/index.js -o cjs/index.js",
     "build:umd": "rollup --config rollup.config.js",
     "minify:umd": "minify umd/canvas-free-drawing.js -o umd/canvas-free-drawing.min.js",
     "test": "jest --verbose true --coverage",
-    "prepare": "npm run test && npm run build:cjs && npm run build:umd && npm run minify:umd",
-    "tsc": "tsc"
+    "prepare": "yarn build:ts && yarn build:cjs && yarn build:umd && yarn minify:umd && yarn test",
+    "tsc": "tsc --strict"
   },
   "author": "Federico Moretti",
   "license": "MIT",
