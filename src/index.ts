@@ -1,6 +1,6 @@
 type Color = number[];
 
-type Coordinates = number[];
+type Coordinates = [number, number];
 
 interface BaseObject {
   [key: string]: any;
@@ -24,7 +24,7 @@ type ColorRGBA = {
   A?: number;
 };
 
-interface Parameters {
+interface CanvasFreeDrawingParameters {
   elementId: string;
   width: number;
   height: number;
@@ -39,8 +39,6 @@ interface Parameters {
 interface NodeColorCache {
   [key: string]: boolean;
 }
-
-const noop = () => {};
 
 export default class CanvasFreeDrawing {
   elementId: string | void;
@@ -78,15 +76,8 @@ export default class CanvasFreeDrawing {
     touchStart: (event: TouchEvent) => void;
     touchMove: (event: TouchEvent) => void;
     touchEnd: (event: MouseEvent) => void;
-    [name: string]: any;
+    [name: string]: unknown;
   };
-  // redrawEvent: Event;
-  // mouseUpEvent: Event;
-  // mouseDownEvent: Event;
-  // mouseEnterEvent: Event;
-  // mouseLeaveEvent: Event;
-  // touchStartEvent: Event;
-  // touchEndEvent: Event;
 
   touchIdentifier?: number;
   previousX?: number;
@@ -95,14 +86,14 @@ export default class CanvasFreeDrawing {
 
   isNodeColorEqualCache: NodeColorCache;
 
-  constructor(params: Parameters) {
+  constructor(params: CanvasFreeDrawingParameters) {
     const {
       elementId,
       width,
       height,
       backgroundColor = [255, 255, 255],
       lineWidth = 5,
-      strokeColor,
+      strokeColor = [0, 0, 0],
       disabled,
       showWarnings = false,
       maxSnapshots = 10,
@@ -144,14 +135,30 @@ export default class CanvasFreeDrawing {
     this.bucketToolTolerance = 0;
     this.isBucketToolEnabled = false;
 
-    this.listenersList = ['mouseDown', 'mouseMove', 'mouseLeave', 'mouseUp', 'touchStart', 'touchMove', 'touchEnd'];
-    this.allowedEvents = ['redraw', 'mouseup', 'mousedown', 'mouseenter', 'mouseleave'];
+    this.listenersList = [
+      'mouseDown',
+      'mouseMove',
+      'mouseLeave',
+      'mouseUp',
+      'touchStart',
+      'touchMove',
+      'touchEnd',
+    ];
+    this.allowedEvents = [
+      'redraw',
+      'fill',
+      'mouseup',
+      'mousedown',
+      'mouseenter',
+      'mouseleave',
+    ];
     this.redrawCounter = 0;
     this.dispatchEventsOnceEvery = 0; // this may become something like: [{event, counter}]
 
     // initialize events
     this.events = {
       redrawEvent: new Event('cfd_redraw'),
+      fillEvent: new Event('cfd_fill'),
       mouseUpEvent: new Event('cfd_mouseup'),
       mouseDownEvent: new Event('cfd_mousedown'),
       mouseEnterEvent: new Event('cfd_mouseenter'),
@@ -170,16 +177,6 @@ export default class CanvasFreeDrawing {
       touchMove: this.touchMove.bind(this),
       touchEnd: this.touchEnd.bind(this),
     };
-
-    // these are needed to remove the listener
-    // this.mouseDown = this.mouseDown.bind(this);
-    // this.mouseMove = this.mouseMove.bind(this);
-    // this.mouseLeave = this.mouseLeave.bind(this);
-    // this.mouseUp = this.mouseUp.bind(this);
-    // this.mouseUpDocument = this.mouseUpDocument.bind(this);
-    // this.touchStart = this.touchStart.bind(this);
-    // this.touchMove = this.touchMove.bind(this);
-    // this.touchEnd = this.touchEnd.bind(this);
 
     this.touchIdentifier = undefined;
     this.previousX = undefined;
@@ -209,14 +206,18 @@ export default class CanvasFreeDrawing {
 
   addListeners(): void {
     this.listenersList.forEach(event => {
-      this.canvas.addEventListener(event.toLowerCase(), this.bindings[event]);
+      this.canvas.addEventListener(event.toLowerCase(), this.bindings[
+        event
+      ] as EventListenerObject);
     });
     document.addEventListener('mouseup', this.bindings.mouseUpDocument);
   }
 
   removeListeners(): void {
     this.listenersList.forEach(event => {
-      this.canvas.removeEventListener(event.toLowerCase(), this.bindings[event]);
+      this.canvas.removeEventListener(event.toLowerCase(), this.bindings[
+        event
+      ] as EventListenerObject);
     });
     document.removeEventListener('mouseup', this.bindings.mouseUpDocument);
   }
@@ -304,14 +305,15 @@ export default class CanvasFreeDrawing {
 
   drawPoint(x: number, y: number): void {
     if (this.isBucketToolEnabled) {
-      this.fill(x, y, this.bucketToolColor, { tolerance: this.bucketToolTolerance });
+      this.fill(x, y, this.bucketToolColor, {
+        tolerance: this.bucketToolTolerance,
+      });
+    } else {
+      this.isDrawing = true;
+      this.storeDrawing(x, y, false);
+      this.canvas.dispatchEvent(this.events.mouseDownEvent);
+      this.handleDrawing();
     }
-    this.isDrawing = true;
-    this.storeDrawing(x, y, false);
-
-    this.canvas.dispatchEvent(this.events.mouseDownEvent);
-
-    this.handleDrawing();
   }
 
   drawLine(x: number, y: number, event: MouseEvent | TouchEvent): void {
@@ -367,7 +369,12 @@ export default class CanvasFreeDrawing {
   }
 
   // https://en.wikipedia.org/wiki/Flood_fill
-  fill(x: number, y: number, newColor: Color, { tolerance }: { tolerance: number }): void {
+  fill(
+    x: number,
+    y: number,
+    newColor: Color,
+    { tolerance }: { tolerance: number }
+  ): void {
     newColor = this.toValidColor(newColor);
     if (this.positions.length === 0 && !this.imageRestored) {
       this.setBackground(newColor, false);
@@ -375,6 +382,7 @@ export default class CanvasFreeDrawing {
       return;
     }
 
+    const pixels = this.width * this.height;
     const imageData = this.context.getImageData(0, 0, this.width, this.height);
     const newData = imageData.data;
     const targetColor = this.getNodeColor(x, y, newData);
@@ -383,16 +391,29 @@ export default class CanvasFreeDrawing {
     queue.push([x, y]);
 
     while (queue.length) {
-      if (queue.length > this.width * this.height) break;
-      const n = queue.pop();
-      let w = <number[]>n;
-      let e = <number[]>n;
+      if (queue.length > pixels) break;
 
-      while (this.isNodeColorEqual(this.getNodeColor(w[0] - 1, w[1], newData), targetColor, tolerance)) {
+      const n = queue.pop();
+      let w = n!;
+      let e = n!;
+
+      while (
+        this.isNodeColorEqual(
+          this.getNodeColor(w[0] - 1, w[1], newData),
+          targetColor,
+          tolerance
+        )
+      ) {
         w = [w[0] - 1, w[1]];
       }
 
-      while (this.isNodeColorEqual(this.getNodeColor(e[0] + 1, e[1], newData), targetColor, tolerance)) {
+      while (
+        this.isNodeColorEqual(
+          this.getNodeColor(e[0] + 1, e[1], newData),
+          targetColor,
+          tolerance
+        )
+      ) {
         e = [e[0] + 1, e[1]];
       }
 
@@ -402,11 +423,23 @@ export default class CanvasFreeDrawing {
       for (let i = firstNode; i <= lastNode; i++) {
         this.setNodeColor(i, w[1], newColor, newData);
 
-        if (this.isNodeColorEqual(this.getNodeColor(i, w[1] + 1, newData), targetColor, tolerance)) {
+        if (
+          this.isNodeColorEqual(
+            this.getNodeColor(i, w[1] + 1, newData),
+            targetColor,
+            tolerance
+          )
+        ) {
           queue.push([i, w[1] + 1]);
         }
 
-        if (this.isNodeColorEqual(this.getNodeColor(i, w[1] - 1, newData), targetColor, tolerance)) {
+        if (
+          this.isNodeColorEqual(
+            this.getNodeColor(i, w[1] - 1, newData),
+            targetColor,
+            tolerance
+          )
+        ) {
           queue.push([i, w[1] - 1]);
         }
       }
@@ -414,6 +447,7 @@ export default class CanvasFreeDrawing {
 
     this.context.putImageData(imageData, 0, 0);
     this.canvas.dispatchEvent(this.events.redrawEvent);
+    this.canvas.dispatchEvent(this.events.fillEvent);
   }
 
   toValidColor(color: Color): Color {
@@ -423,15 +457,16 @@ export default class CanvasFreeDrawing {
       validColor.push(255);
       return validColor;
     } else {
-      this.logWarning('Color is not valid! It must be an array with RGB values:  [0-255, 0-255, 0-255]');
+      this.logWarning(
+        'Color is not valid!\n' +
+          'It must be an array with RGB values:  [0-255, 0-255, 0-255]'
+      );
       return [0, 0, 0, 255];
     }
   }
 
   // i = color 1; j = color 2; t = tolerance
   isNodeColorEqual(i: Color, j: Color, t: number): boolean {
-    // const color1 = JSON.stringify(i);
-    // const color2 = JSON.stringify(j);
     const color1 = '' + i[0] + i[1] + i[2] + i[3];
     const color2 = '' + j[0] + j[1] + j[2] + j[3];
     const key = color1 + color2 + t;
@@ -449,7 +484,8 @@ export default class CanvasFreeDrawing {
     const percentDiffGreen = diffGreen / 255;
     const percentDiffBlue = diffBlue / 255;
 
-    const percentDiff = ((percentDiffRed + percentDiffGreen + percentDiffBlue) / 3) * 100;
+    const percentDiff =
+      ((percentDiffRed + percentDiffGreen + percentDiffBlue) / 3) * 100;
     const result = t >= percentDiff;
 
     this.isNodeColorEqualCache[key] = result;
@@ -461,7 +497,12 @@ export default class CanvasFreeDrawing {
     return [data[i], data[i + 1], data[i + 2], data[i + 3]];
   }
 
-  setNodeColor(x: number, y: number, color: Color, data: Uint8ClampedArray): void {
+  setNodeColor(
+    x: number,
+    y: number,
+    color: Color,
+    data: Uint8ClampedArray
+  ): void {
     const i = (x + y * this.width) * 4;
     data[i] = color[0];
     data[i + 1] = color[1];
@@ -574,7 +615,9 @@ export default class CanvasFreeDrawing {
   }
 
   toggleDrawingMode(): boolean {
-    return this.isDrawingModeEnabled ? this.disableDrawingMode() : this.enableDrawingMode();
+    return this.isDrawingModeEnabled
+      ? this.disableDrawingMode()
+      : this.enableDrawingMode();
   }
 
   clear(): void {
