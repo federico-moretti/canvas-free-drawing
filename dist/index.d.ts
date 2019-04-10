@@ -12,7 +12,7 @@ interface Position {
     moving?: boolean;
     lineWidth: number;
 }
-interface Parameters {
+interface CanvasFreeDrawingParameters {
     elementId: string;
     width: number;
     height: number;
@@ -63,14 +63,14 @@ export default class CanvasFreeDrawing {
         touchStart: (event: TouchEvent) => void;
         touchMove: (event: TouchEvent) => void;
         touchEnd: (event: MouseEvent) => void;
-        [name: string]: any;
+        [name: string]: unknown;
     };
     touchIdentifier?: number;
     previousX?: number;
     previousY?: number;
     showWarnings: boolean;
     isNodeColorEqualCache: NodeColorCache;
-    constructor(params: Parameters);
+    constructor(params: CanvasFreeDrawingParameters);
     requiredParam(object: BaseObject, param: string): void;
     logWarning(...args: string[]): void;
     addListeners(): void;

@@ -2,19 +2,15 @@
 
 Simple and straightforward package that allows you to free draw on a canvas html element.
 
-You can try it [here](https://fmoretti.com/canvas-free-drawing)!
+You can try it [here](https://federicomoretti.dev/canvas-free-drawing)!
 
 ## Latest Update
 
-- **Added undo and redo function**: you can define the maximum undo allowed with `maxSnapshots` in the init.
-- Fixed issue #1
-- Optimized bucket tool, yet to be perfect
-- Bucket tool tolerance is now defined in percentage
-- Increased test coverage
+- **Major refactor in Typescript**
 
 ## Features
 
-- Lightweight (~6KB minified)
+- Lightweight (~11KB minified)
 - Simplify canvas APIs
 - Bucket tool
 - Events
@@ -23,10 +19,12 @@ You can try it [here](https://fmoretti.com/canvas-free-drawing)!
 
 ## Installing
 
-Using npm:
+Import as a module
 
 ```bash
-npm install canvas-free-drawing
+npm install --save canvas-free-drawing
+# or
+yarn add canvas-free-drawing
 ```
 
 Use local file:
@@ -44,7 +42,11 @@ Basic usage:
 
 <script>
   // initialize
-  const cfd = new CanvasFreeDrawing({ elementId: 'cfd', width: 500, height: 500 });
+  const cfd = new CanvasFreeDrawing({
+    elementId: 'cfd',
+    width: 500,
+    height: 500,
+  });
 
   // set properties
   cfd.setLineWidth(10); // in px
@@ -136,7 +138,7 @@ You can define the maximum undo and redo allowed with `maxSnapshots` in the init
 
 Redo last action on the canvas
 
-### Notes 
+### Notes
 
 Colors must be set with an array with RGB values: [0-255, 0-255, 0-255].
 
@@ -147,6 +149,7 @@ Subscribe to an event emitter, the callback will be called when the event gets c
 These are the events allowed:
 
 - redraw
+- fill
 - mouseup
 - mousedown
 - mouseenter

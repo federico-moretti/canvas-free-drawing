@@ -1,4 +1,5 @@
-var noop = function () { };
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 var CanvasFreeDrawing = /** @class */ (function () {
     function CanvasFreeDrawing(params) {
         var elementId = params.elementId, width = params.width, height = params.height, _a = params.backgroundColor, backgroundColor = _a === void 0 ? [255, 255, 255] : _a, _b = params.lineWidth, lineWidth = _b === void 0 ? 5 : _b, strokeColor = params.strokeColor, disabled = params.disabled, _c = params.showWarnings, showWarnings = _c === void 0 ? false : _c, _d = params.maxSnapshots, maxSnapshots = _d === void 0 ? 10 : _d;
@@ -34,19 +35,35 @@ var CanvasFreeDrawing = /** @class */ (function () {
         this.bucketToolColor = this.toValidColor(strokeColor);
         this.bucketToolTolerance = 0;
         this.isBucketToolEnabled = false;
-        this.listenersList = ['mouseDown', 'mouseMove', 'mouseLeave', 'mouseUp', 'touchStart', 'touchMove', 'touchEnd'];
-        this.allowedEvents = ['redraw', 'mouseup', 'mousedown', 'mouseenter', 'mouseleave'];
+        this.listenersList = [
+            'mouseDown',
+            'mouseMove',
+            'mouseLeave',
+            'mouseUp',
+            'touchStart',
+            'touchMove',
+            'touchEnd',
+        ];
+        this.allowedEvents = [
+            'redraw',
+            'fill',
+            'mouseup',
+            'mousedown',
+            'mouseenter',
+            'mouseleave',
+        ];
         this.redrawCounter = 0;
         this.dispatchEventsOnceEvery = 0; // this may become something like: [{event, counter}]
         // initialize events
         this.events = {
             redrawEvent: new Event('cfd_redraw'),
+            fillEvent: new Event('cfd_fill'),
             mouseUpEvent: new Event('cfd_mouseup'),
             mouseDownEvent: new Event('cfd_mousedown'),
             mouseEnterEvent: new Event('cfd_mouseenter'),
             mouseLeaveEvent: new Event('cfd_mouseleave'),
             touchStartEvent: new Event('cfd_touchstart'),
-            touchEndEvent: new Event('cfd_touchend')
+            touchEndEvent: new Event('cfd_touchend'),
         };
         this.bindings = {
             mouseDown: this.mouseDown.bind(this),
@@ -56,17 +73,8 @@ var CanvasFreeDrawing = /** @class */ (function () {
             mouseUpDocument: this.mouseUpDocument.bind(this),
             touchStart: this.touchStart.bind(this),
             touchMove: this.touchMove.bind(this),
-            touchEnd: this.touchEnd.bind(this)
+            touchEnd: this.touchEnd.bind(this),
         };
-        // these are needed to remove the listener
-        // this.mouseDown = this.mouseDown.bind(this);
-        // this.mouseMove = this.mouseMove.bind(this);
-        // this.mouseLeave = this.mouseLeave.bind(this);
-        // this.mouseUp = this.mouseUp.bind(this);
-        // this.mouseUpDocument = this.mouseUpDocument.bind(this);
-        // this.touchStart = this.touchStart.bind(this);
-        // this.touchMove = this.touchMove.bind(this);
-        // this.touchEnd = this.touchEnd.bind(this);
         this.touchIdentifier = undefined;
         this.previousX = undefined;
         this.previousY = undefined;
@@ -178,12 +186,16 @@ var CanvasFreeDrawing = /** @class */ (function () {
     };
     CanvasFreeDrawing.prototype.drawPoint = function (x, y) {
         if (this.isBucketToolEnabled) {
-            this.fill(x, y, this.bucketToolColor, { tolerance: this.bucketToolTolerance });
+            this.fill(x, y, this.bucketToolColor, {
+                tolerance: this.bucketToolTolerance,
+            });
         }
-        this.isDrawing = true;
-        this.storeDrawing(x, y, false);
-        this.canvas.dispatchEvent(this.events.mouseDownEvent);
-        this.handleDrawing();
+        else {
+            this.isDrawing = true;
+            this.storeDrawing(x, y, false);
+            this.canvas.dispatchEvent(this.events.mouseDownEvent);
+            this.handleDrawing();
+        }
     };
     CanvasFreeDrawing.prototype.drawLine = function (x, y, event) {
         if (this.leftCanvasDrawing) {
@@ -245,6 +257,7 @@ var CanvasFreeDrawing = /** @class */ (function () {
             this.canvas.dispatchEvent(this.events.redrawEvent);
             return;
         }
+        var pixels = this.width * this.height;
         var imageData = this.context.getImageData(0, 0, this.width, this.height);
         var newData = imageData.data;
         var targetColor = this.getNodeColor(x, y, newData);
@@ -253,7 +266,7 @@ var CanvasFreeDrawing = /** @class */ (function () {
         var queue = [];
         queue.push([x, y]);
         while (queue.length) {
-            if (queue.length > this.width * this.height)
+            if (queue.length > pixels)
                 break;
             var n = queue.pop();
             var w = n;
@@ -278,6 +291,7 @@ var CanvasFreeDrawing = /** @class */ (function () {
         }
         this.context.putImageData(imageData, 0, 0);
         this.canvas.dispatchEvent(this.events.redrawEvent);
+        this.canvas.dispatchEvent(this.events.fillEvent);
     };
     CanvasFreeDrawing.prototype.toValidColor = function (color) {
         if (Array.isArray(color) && color.length === 4)
@@ -288,14 +302,13 @@ var CanvasFreeDrawing = /** @class */ (function () {
             return validColor;
         }
         else {
-            this.logWarning('Color is not valid! It must be an array with RGB values:  [0-255, 0-255, 0-255]');
+            this.logWarning('Color is not valid!\n' +
+                'It must be an array with RGB values:  [0-255, 0-255, 0-255]');
             return [0, 0, 0, 255];
         }
     };
     // i = color 1; j = color 2; t = tolerance
     CanvasFreeDrawing.prototype.isNodeColorEqual = function (i, j, t) {
-        // const color1 = JSON.stringify(i);
-        // const color2 = JSON.stringify(j);
         var color1 = '' + i[0] + i[1] + i[2] + i[3];
         var color2 = '' + j[0] + j[1] + j[2] + j[3];
         var key = color1 + color2 + t;
@@ -344,7 +357,7 @@ var CanvasFreeDrawing = /** @class */ (function () {
                 moving: moving,
                 lineWidth: this.lineWidth,
                 strokeColor: this.strokeColor,
-                isBucket: false
+                isBucket: false,
             });
         }
         else {
@@ -355,7 +368,7 @@ var CanvasFreeDrawing = /** @class */ (function () {
                     isBucket: false,
                     moving: moving,
                     lineWidth: this.lineWidth,
-                    strokeColor: this.strokeColor
+                    strokeColor: this.strokeColor,
                 },
             ]);
         }
@@ -419,7 +432,9 @@ var CanvasFreeDrawing = /** @class */ (function () {
         return (this.isBucketToolEnabled = !this.isBucketToolEnabled);
     };
     CanvasFreeDrawing.prototype.toggleDrawingMode = function () {
-        return this.isDrawingModeEnabled ? this.disableDrawingMode() : this.enableDrawingMode();
+        return this.isDrawingModeEnabled
+            ? this.disableDrawingMode()
+            : this.enableDrawingMode();
     };
     CanvasFreeDrawing.prototype.clear = function () {
         this.context.clearRect(0, 0, this.width, this.height);
@@ -470,4 +485,4 @@ var CanvasFreeDrawing = /** @class */ (function () {
     };
     return CanvasFreeDrawing;
 }());
-export default CanvasFreeDrawing;
+exports.default = CanvasFreeDrawing;
