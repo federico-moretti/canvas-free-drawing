@@ -377,8 +377,10 @@ export default class CanvasFreeDrawing {
   ): void {
     newColor = this.toValidColor(newColor);
     if (this.positions.length === 0 && !this.imageRestored) {
+      console.log('inside if fill imageRestored');
       this.setBackground(newColor, false);
       this.canvas.dispatchEvent(this.events.redrawEvent);
+      this.canvas.dispatchEvent(this.events.fillEvent);
       return;
     }
 
@@ -623,6 +625,7 @@ export default class CanvasFreeDrawing {
   clear(): void {
     this.context.clearRect(0, 0, this.width, this.height);
     this.positions = [];
+    this.imageRestored = false;
     if (this.backgroundColor) this.setBackground(this.backgroundColor);
     this.handleEndDrawing();
   }
@@ -649,6 +652,7 @@ export default class CanvasFreeDrawing {
       this.snapshots.pop();
       this.undos.push(lastSnapshot);
       this.undos = this.undos.splice(-Math.abs(this.maxSnapshots));
+      this.imageRestored = true;
     } else {
       this.logWarning('There are no more undos left.');
     }

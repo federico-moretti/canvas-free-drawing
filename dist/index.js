@@ -253,8 +253,10 @@ var CanvasFreeDrawing = /** @class */ (function () {
         var tolerance = _a.tolerance;
         newColor = this.toValidColor(newColor);
         if (this.positions.length === 0 && !this.imageRestored) {
+            console.log('inside if fill imageRestored');
             this.setBackground(newColor, false);
             this.canvas.dispatchEvent(this.events.redrawEvent);
+            this.canvas.dispatchEvent(this.events.fillEvent);
             return;
         }
         var pixels = this.width * this.height;
@@ -439,6 +441,7 @@ var CanvasFreeDrawing = /** @class */ (function () {
     CanvasFreeDrawing.prototype.clear = function () {
         this.context.clearRect(0, 0, this.width, this.height);
         this.positions = [];
+        this.imageRestored = false;
         if (this.backgroundColor)
             this.setBackground(this.backgroundColor);
         this.handleEndDrawing();
@@ -465,6 +468,7 @@ var CanvasFreeDrawing = /** @class */ (function () {
             this.snapshots.pop();
             this.undos.push(lastSnapshot);
             this.undos = this.undos.splice(-Math.abs(this.maxSnapshots));
+            this.imageRestored = true;
         }
         else {
             this.logWarning('There are no more undos left.');

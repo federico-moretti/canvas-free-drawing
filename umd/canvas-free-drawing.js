@@ -16,7 +16,7 @@
 	Object.defineProperty(exports, "__esModule", { value: true });
 	var CanvasFreeDrawing = /** @class */ (function () {
 	    function CanvasFreeDrawing(params) {
-	        var elementId = params.elementId, width = params.width, height = params.height, _a = params.backgroundColor, backgroundColor = _a === void 0 ? [255, 255, 255] : _a, _b = params.lineWidth, lineWidth = _b === void 0 ? 5 : _b, strokeColor = params.strokeColor, disabled = params.disabled, _c = params.showWarnings, showWarnings = _c === void 0 ? false : _c, _d = params.maxSnapshots, maxSnapshots = _d === void 0 ? 10 : _d;
+	        var elementId = params.elementId, width = params.width, height = params.height, _a = params.backgroundColor, backgroundColor = _a === void 0 ? [255, 255, 255] : _a, _b = params.lineWidth, lineWidth = _b === void 0 ? 5 : _b, _c = params.strokeColor, strokeColor = _c === void 0 ? [0, 0, 0] : _c, disabled = params.disabled, _d = params.showWarnings, showWarnings = _d === void 0 ? false : _d, _e = params.maxSnapshots, maxSnapshots = _e === void 0 ? 10 : _e;
 	        this.requiredParam(params, 'elementId');
 	        this.requiredParam(params, 'width');
 	        this.requiredParam(params, 'height');
@@ -60,6 +60,7 @@
 	        ];
 	        this.allowedEvents = [
 	            'redraw',
+	            'fill',
 	            'mouseup',
 	            'mousedown',
 	            'mouseenter',
@@ -70,6 +71,7 @@
 	        // initialize events
 	        this.events = {
 	            redrawEvent: new Event('cfd_redraw'),
+	            fillEvent: new Event('cfd_fill'),
 	            mouseUpEvent: new Event('cfd_mouseup'),
 	            mouseDownEvent: new Event('cfd_mousedown'),
 	            mouseEnterEvent: new Event('cfd_mouseenter'),
@@ -265,8 +267,10 @@
 	        var tolerance = _a.tolerance;
 	        newColor = this.toValidColor(newColor);
 	        if (this.positions.length === 0 && !this.imageRestored) {
+	            console.log('inside if fill imageRestored');
 	            this.setBackground(newColor, false);
 	            this.canvas.dispatchEvent(this.events.redrawEvent);
+	            this.canvas.dispatchEvent(this.events.fillEvent);
 	            return;
 	        }
 	        var pixels = this.width * this.height;
@@ -302,7 +306,8 @@
 	            }
 	        }
 	        this.context.putImageData(imageData, 0, 0);
-	        //this.canvas.dispatchEvent(this.events.redrawEvent);
+	        this.canvas.dispatchEvent(this.events.redrawEvent);
+	        this.canvas.dispatchEvent(this.events.fillEvent);
 	    };
 	    CanvasFreeDrawing.prototype.toValidColor = function (color) {
 	        if (Array.isArray(color) && color.length === 4)
@@ -450,6 +455,7 @@
 	    CanvasFreeDrawing.prototype.clear = function () {
 	        this.context.clearRect(0, 0, this.width, this.height);
 	        this.positions = [];
+	        this.imageRestored = false;
 	        if (this.backgroundColor)
 	            this.setBackground(this.backgroundColor);
 	        this.handleEndDrawing();
@@ -476,6 +482,7 @@
 	            this.snapshots.pop();
 	            this.undos.push(lastSnapshot);
 	            this.undos = this.undos.splice(-Math.abs(this.maxSnapshots));
+	            this.imageRestored = true;
 	        }
 	        else {
 	            this.logWarning('There are no more undos left.');

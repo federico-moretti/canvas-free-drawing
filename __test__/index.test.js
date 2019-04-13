@@ -421,4 +421,61 @@ describe('CanvasFreeDrawing', () => {
     expect(console.warn.mock.calls.length).toBe(1);
     expect(console.warn).toHaveBeenCalledWith('There are no more redo left.');
   });
+
+  it('should fill with floodfill after clear and then redo', done => {
+    let spySetBackground;
+
+    cfd.on({ event: 'fill' }, () => {
+      expect(cfd.imageRestored).toBe(true);
+      expect(spySetBackground).not.toHaveBeenCalled();
+      done();
+    });
+
+    cfd.mouseDown({ button: 0, pageX: 100, pageY: 100 });
+    const moveEvents = [
+      { button: 0, pageX: 300, pageY: 100 },
+      { button: 0, pageX: 300, pageY: 300 },
+      { button: 0, pageX: 100, pageY: 300 },
+      { button: 0, pageX: 100, pageY: 100 },
+    ];
+    moveEvents.forEach(event => cfd.mouseMove(event));
+
+    cfd.clear();
+    cfd.undo();
+    spySetBackground = jest.spyOn(cfd, 'setBackground');
+
+    cfd.configBucketTool({ tolerance: 0, color: [255, 0, 255] });
+    cfd.toggleBucketTool();
+    expect(cfd.isBucketToolEnabled).toBe(true);
+
+    cfd.mouseDown({ button: 0, pageX: 150, pageY: 150 });
+  });
+
+  it('should fill with set bg after clear', done => {
+    let spySetBackground;
+
+    cfd.on({ event: 'fill' }, () => {
+      expect(cfd.imageRestored).toBe(false);
+      expect(spySetBackground).toHaveBeenCalled();
+      done();
+    });
+
+    cfd.mouseDown({ button: 0, pageX: 100, pageY: 100 });
+    const moveEvents = [
+      { button: 0, pageX: 300, pageY: 100 },
+      { button: 0, pageX: 300, pageY: 300 },
+      { button: 0, pageX: 100, pageY: 300 },
+      { button: 0, pageX: 100, pageY: 100 },
+    ];
+    moveEvents.forEach(event => cfd.mouseMove(event));
+
+    cfd.clear();
+    spySetBackground = jest.spyOn(cfd, 'setBackground');
+
+    cfd.configBucketTool({ tolerance: 0, color: [255, 0, 255] });
+    cfd.toggleBucketTool();
+    expect(cfd.isBucketToolEnabled).toBe(true);
+
+    cfd.mouseDown({ button: 0, pageX: 150, pageY: 150 });
+  });
 });
