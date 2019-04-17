@@ -276,7 +276,6 @@
 	        var tolerance = _a.tolerance;
 	        newColor = this.toValidColor(newColor);
 	        if (this.positions.length === 0 && !this.imageRestored) {
-	            console.log('inside if fill imageRestored');
 	            this.setBackground(newColor, false);
 	            this.canvas.dispatchEvent(this.events.redrawEvent);
 	            this.canvas.dispatchEvent(this.events.fillEvent);
