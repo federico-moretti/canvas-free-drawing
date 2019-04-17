@@ -54,31 +54,47 @@
 
     <p>Canvas:</p>
     <div id="canvas-container"><canvas id="cfd"></canvas></div>
-    <button id="clear">Clear canvas</button> <button id="save">Save canvas</button>
-    <button id="restore">Restore canvas</button> <button id="bucket">Bucket</button>
-    <button id="disable">Disable</button> <button id="enable">Enable</button> <button id="undo">Undo</button>
+    <button id="clear">Clear canvas</button>
+    <button id="save">Save canvas</button>
+    <button id="restore">Restore canvas</button>
+    <button id="bucket">Bucket</button> <button id="disable">Disable</button>
+    <button id="enable">Enable</button> <button id="undo">Undo</button>
     <button id="redo">Redo</button> <input id="tolerance" type="text" /> <br />
     <br />
-    <button id="red" class="color">Red</button> <button id="green" class="color">Green</button>
-    <button id="blue" class="color">Blue</button> <button id="black" class="color">Black</button>
-    <button id="darkgrey" class="color">darkgrey</button> <button id="grey" class="color">grey</button>
+    <button id="red" class="color">Red</button>
+    <button id="green" class="color">Green</button>
+    <button id="blue" class="color">Blue</button>
+    <button id="black" class="color">Black</button>
+    <button id="darkgrey" class="color">darkgrey</button>
+    <button id="grey" class="color">grey</button>
     <button id="lightgrey" class="color">lightgrey</button> <br />
     <br />
     <textarea name="backup" id="backup" cols="60" rows="10"></textarea> <br />
     <br />
     <p id="redraw-count">0</p>
   </body>
-  <script src="umd/canvas-free-drawing.js"></script>
+  <script src="../umd/canvas-free-drawing.js"></script>
   <script>
-    const cfd = new CanvasFreeDrawing({ elementId: 'cfd', width: 500, height: 500, showWarnings: true });
+    const cfd = new CanvasFreeDrawing({
+      elementId: 'cfd',
+      width: 500,
+      height: 500,
+      showWarnings: true,
+    });
     const redrawCount = document.getElementById('redraw-count');
-    cfd.on({ event: 'redraw', counter: 10 }, () => {
+    cfd.on({ event: 'redraw', counter: 0 }, () => {
       redrawCount.innerText = parseInt(redrawCount.innerText) + 1;
     });
     const textarea = document.getElementById('backup');
-    document.getElementById('clear').addEventListener('click', () => cfd.clear());
-    document.getElementById('disable').addEventListener('click', () => cfd.disableDrawingMode());
-    document.getElementById('enable').addEventListener('click', () => cfd.enableDrawingMode());
+    document
+      .getElementById('clear')
+      .addEventListener('click', () => cfd.clear());
+    document
+      .getElementById('disable')
+      .addEventListener('click', () => cfd.disableDrawingMode());
+    document
+      .getElementById('enable')
+      .addEventListener('click', () => cfd.enableDrawingMode());
     document.getElementById('save').addEventListener('click', () => {
       textarea.value = cfd.save();
     });
@@ -88,7 +104,9 @@
     document.getElementById('undo').addEventListener('click', () => cfd.undo());
     document.getElementById('redo').addEventListener('click', () => cfd.redo());
     document.getElementById('bucket').addEventListener('click', () => {
-      cfd.configBucketTool({ tolerance: document.getElementById('tolerance').value });
+      cfd.configBucketTool({
+        tolerance: document.getElementById('tolerance').value,
+      });
       const isActive = cfd.toggleBucketTool();
       document.getElementById('bucket').classList.add('active');
       if (isActive) {
@@ -96,12 +114,26 @@
         document.getElementById('bucket').classList.remove('active');
       }
     });
-    document.getElementById('red').addEventListener('click', () => cfd.setDrawingColor([255, 0, 0]));
-    document.getElementById('green').addEventListener('click', () => cfd.setDrawingColor([0, 255, 0]));
-    document.getElementById('blue').addEventListener('click', () => cfd.setDrawingColor([0, 0, 255]));
-    document.getElementById('black').addEventListener('click', () => cfd.setDrawingColor([0, 0, 0]));
-    document.getElementById('darkgrey').addEventListener('click', () => cfd.setDrawingColor([50, 50, 50]));
-    document.getElementById('grey').addEventListener('click', () => cfd.setDrawingColor([100, 100, 100]));
-    document.getElementById('lightgrey').addEventListener('click', () => cfd.setDrawingColor([150, 150, 150]));
+    document
+      .getElementById('red')
+      .addEventListener('click', () => cfd.setDrawingColor([255, 0, 0]));
+    document
+      .getElementById('green')
+      .addEventListener('click', () => cfd.setDrawingColor([0, 255, 0]));
+    document
+      .getElementById('blue')
+      .addEventListener('click', () => cfd.setDrawingColor([0, 0, 255]));
+    document
+      .getElementById('black')
+      .addEventListener('click', () => cfd.setDrawingColor([0, 0, 0]));
+    document
+      .getElementById('darkgrey')
+      .addEventListener('click', () => cfd.setDrawingColor([50, 50, 50]));
+    document
+      .getElementById('grey')
+      .addEventListener('click', () => cfd.setDrawingColor([100, 100, 100]));
+    document
+      .getElementById('lightgrey')
+      .addEventListener('click', () => cfd.setDrawingColor([150, 150, 150]));
   </script>
 </html>
