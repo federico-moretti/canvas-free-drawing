@@ -14,6 +14,15 @@
 
 	var dist = createCommonjsModule(function (module, exports) {
 	Object.defineProperty(exports, "__esModule", { value: true });
+	var AllowedEvents;
+	(function (AllowedEvents) {
+	    AllowedEvents["redraw"] = "redraw";
+	    AllowedEvents["fill"] = "fill";
+	    AllowedEvents["mouseup"] = "mouseup";
+	    AllowedEvents["mousedown"] = "mousedown";
+	    AllowedEvents["mouseenter"] = "mouseenter";
+	    AllowedEvents["mouseleave"] = "mouseleave";
+	})(AllowedEvents || (AllowedEvents = {}));
 	var CanvasFreeDrawing = /** @class */ (function () {
 	    function CanvasFreeDrawing(params) {
 	        var elementId = params.elementId, width = params.width, height = params.height, _a = params.backgroundColor, backgroundColor = _a === void 0 ? [255, 255, 255] : _a, _b = params.lineWidth, lineWidth = _b === void 0 ? 5 : _b, _c = params.strokeColor, strokeColor = _c === void 0 ? [0, 0, 0] : _c, disabled = params.disabled, _d = params.showWarnings, showWarnings = _d === void 0 ? false : _d, _e = params.maxSnapshots, maxSnapshots = _e === void 0 ? 10 : _e;
@@ -58,14 +67,7 @@
 	            'touchMove',
 	            'touchEnd',
 	        ];
-	        this.allowedEvents = [
-	            'redraw',
-	            'fill',
-	            'mouseup',
-	            'mousedown',
-	            'mouseenter',
-	            'mouseleave',
-	        ];
+	        this.allowedEvents = this.getAllowedEvents();
 	        this.redrawCounter = 0;
 	        this.dispatchEventsOnceEvery = 0; // this may become something like: [{event, counter}]
 	        // initialize events
@@ -127,6 +129,13 @@
 	            _this.canvas.removeEventListener(event.toLowerCase(), _this.bindings[event]);
 	        });
 	        document.removeEventListener('mouseup', this.bindings.mouseUpDocument);
+	    };
+	    CanvasFreeDrawing.prototype.getAllowedEvents = function () {
+	        var events = [];
+	        for (var event_1 in AllowedEvents) {
+	            events.push(event_1);
+	        }
+	        return events;
 	    };
 	    CanvasFreeDrawing.prototype.enableDrawingMode = function () {
 	        this.isDrawingModeEnabled = true;

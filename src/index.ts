@@ -40,6 +40,15 @@ interface NodeColorCache {
   [key: string]: boolean;
 }
 
+enum AllowedEvents {
+  redraw = 'redraw',
+  fill = 'fill',
+  mouseup = 'mouseup',
+  mousedown = 'mousedown',
+  mouseenter = 'mouseenter',
+  mouseleave = 'mouseleave',
+}
+
 export default class CanvasFreeDrawing {
   elementId: string | void;
   canvasNode: HTMLElement | null;
@@ -62,9 +71,9 @@ export default class CanvasFreeDrawing {
   bucketToolTolerance: number;
   isBucketToolEnabled: boolean;
   listenersList: string[];
-  allowedEvents: string[];
   redrawCounter: number;
   dispatchEventsOnceEvery: number;
+  allowedEvents: string[];
 
   events: { [key: string]: Event };
   bindings: {
@@ -144,14 +153,7 @@ export default class CanvasFreeDrawing {
       'touchMove',
       'touchEnd',
     ];
-    this.allowedEvents = [
-      'redraw',
-      'fill',
-      'mouseup',
-      'mousedown',
-      'mouseenter',
-      'mouseleave',
-    ];
+    this.allowedEvents = this.getAllowedEvents();
     this.redrawCounter = 0;
     this.dispatchEventsOnceEvery = 0; // this may become something like: [{event, counter}]
 
@@ -220,6 +222,14 @@ export default class CanvasFreeDrawing {
       ] as EventListenerObject);
     });
     document.removeEventListener('mouseup', this.bindings.mouseUpDocument);
+  }
+
+  getAllowedEvents(): string[] {
+    const events = [];
+    for (const event in AllowedEvents) {
+      events.push(event);
+    }
+    return events;
   }
 
   enableDrawingMode(): boolean {
@@ -568,7 +578,10 @@ export default class CanvasFreeDrawing {
 
   // Public APIs
 
-  on(params: { event: string; counter?: number }, callback: Function): void {
+  on(
+    params: { event: AllowedEvents; counter?: number },
+    callback: () => void
+  ): void {
     const { event, counter } = params;
     this.requiredParam(params, 'event');
 
@@ -634,7 +647,7 @@ export default class CanvasFreeDrawing {
     return this.canvas.toDataURL();
   }
 
-  restore(backup: string, callback: Function): void {
+  restore(backup: string, callback: () => void): void {
     const image = new Image();
     image.src = backup;
     image.onload = () => {

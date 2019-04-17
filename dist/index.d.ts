@@ -26,6 +26,14 @@ interface CanvasFreeDrawingParameters {
 interface NodeColorCache {
     [key: string]: boolean;
 }
+declare enum AllowedEvents {
+    redraw = "redraw",
+    fill = "fill",
+    mouseup = "mouseup",
+    mousedown = "mousedown",
+    mouseenter = "mouseenter",
+    mouseleave = "mouseleave"
+}
 export default class CanvasFreeDrawing {
     elementId: string | void;
     canvasNode: HTMLElement | null;
@@ -48,9 +56,9 @@ export default class CanvasFreeDrawing {
     bucketToolTolerance: number;
     isBucketToolEnabled: boolean;
     listenersList: string[];
-    allowedEvents: string[];
     redrawCounter: number;
     dispatchEventsOnceEvery: number;
+    allowedEvents: string[];
     events: {
         [key: string]: Event;
     };
@@ -75,6 +83,7 @@ export default class CanvasFreeDrawing {
     logWarning(...args: string[]): void;
     addListeners(): void;
     removeListeners(): void;
+    getAllowedEvents(): string[];
     enableDrawingMode(): boolean;
     disableDrawingMode(): boolean;
     mouseDown(event: MouseEvent): void;
@@ -106,9 +115,9 @@ export default class CanvasFreeDrawing {
     getCanvasSnapshot(): ImageData;
     restoreCanvasSnapshot(imageData: ImageData): void;
     on(params: {
-        event: string;
+        event: AllowedEvents;
         counter?: number;
-    }, callback: Function): void;
+    }, callback: () => void): void;
     setLineWidth(px: number): void;
     setBackground(color: Color, save?: boolean): void;
     setDrawingColor(color: Color): void;
@@ -121,7 +130,7 @@ export default class CanvasFreeDrawing {
     toggleDrawingMode(): boolean;
     clear(): void;
     save(): string;
-    restore(backup: string, callback: Function): void;
+    restore(backup: string, callback: () => void): void;
     undo(): void;
     redo(): void;
 }
