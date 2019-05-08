@@ -40,7 +40,7 @@ interface NodeColorCache {
   [key: string]: boolean;
 }
 
-enum AllowedEvents {
+export enum AllowedEvents {
   redraw = 'redraw',
   fill = 'fill',
   mouseup = 'mouseup',
