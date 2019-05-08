@@ -28,12 +28,12 @@ interface CanvasFreeDrawingParameters {
   elementId: string;
   width: number;
   height: number;
-  backgroundColor: Color;
-  lineWidth: number;
-  strokeColor: Color;
-  disabled: string;
-  showWarnings: boolean;
-  maxSnapshots: number;
+  backgroundColor?: Color;
+  lineWidth?: number;
+  strokeColor?: Color;
+  disabled?: string;
+  showWarnings?: boolean;
+  maxSnapshots?: number;
 }
 
 interface NodeColorCache {
