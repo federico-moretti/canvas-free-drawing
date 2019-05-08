@@ -1,8 +1,8 @@
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-	typeof define === 'function' && define.amd ? define(factory) :
-	(global = global || self, global.CanvasFreeDrawing = factory());
-}(this, function () { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+	typeof define === 'function' && define.amd ? define(['exports'], factory) :
+	(global = global || self, factory(global.CanvasFreeDrawing = {}));
+}(this, function (exports) { 'use strict';
 
 	function unwrapExports (x) {
 		return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
@@ -22,7 +22,7 @@
 	    AllowedEvents["mousedown"] = "mousedown";
 	    AllowedEvents["mouseenter"] = "mouseenter";
 	    AllowedEvents["mouseleave"] = "mouseleave";
-	})(AllowedEvents || (AllowedEvents = {}));
+	})(AllowedEvents = exports.AllowedEvents || (exports.AllowedEvents = {}));
 	var CanvasFreeDrawing = /** @class */ (function () {
 	    function CanvasFreeDrawing(params) {
 	        var elementId = params.elementId, width = params.width, height = params.height, _a = params.backgroundColor, backgroundColor = _a === void 0 ? [255, 255, 255] : _a, _b = params.lineWidth, lineWidth = _b === void 0 ? 5 : _b, _c = params.strokeColor, strokeColor = _c === void 0 ? [0, 0, 0] : _c, disabled = params.disabled, _d = params.showWarnings, showWarnings = _d === void 0 ? false : _d, _e = params.maxSnapshots, maxSnapshots = _e === void 0 ? 10 : _e;
@@ -515,7 +515,11 @@
 	});
 
 	var index = unwrapExports(dist);
+	var dist_1 = dist.AllowedEvents;
 
-	return index;
+	exports.AllowedEvents = dist_1;
+	exports.default = index;
+
+	Object.defineProperty(exports, '__esModule', { value: true });
 
 }));

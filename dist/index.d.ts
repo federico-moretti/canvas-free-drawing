@@ -26,7 +26,7 @@ interface CanvasFreeDrawingParameters {
 interface NodeColorCache {
     [key: string]: boolean;
 }
-declare enum AllowedEvents {
+export declare enum AllowedEvents {
     redraw = "redraw",
     fill = "fill",
     mouseup = "mouseup",
