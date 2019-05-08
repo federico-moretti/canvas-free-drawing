@@ -1,6 +1,6 @@
 {
   "name": "canvas-free-drawing",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Simple, lightweight and straightforward package that allows you to free draw on a canvas html element.",
   "main": "dist/index.js",
   "module": "dist/index.js",
