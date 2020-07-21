@@ -250,15 +250,11 @@ export default class CanvasFreeDrawing {
 
   mouseDown(event: MouseEvent): void {
     if (event.button !== 0) return;
-    const x = event.pageX - this.canvas.offsetLeft;
-    const y = event.pageY - this.canvas.offsetTop;
-    this.drawPoint(x, y);
+    this.drawPoint(event.offsetX, event.offsetY);
   }
 
   mouseMove(event: MouseEvent): void {
-    const x = event.pageX - this.canvas.offsetLeft;
-    const y = event.pageY - this.canvas.offsetTop;
-    this.drawLine(x, y, event);
+    this.drawLine(event.offsetX, event.offsetY, event);
   }
 
   touchStart(event: TouchEvent): void {

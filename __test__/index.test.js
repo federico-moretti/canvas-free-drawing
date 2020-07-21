@@ -13,7 +13,7 @@ describe('CanvasFreeDrawing', () => {
   };
 
   const drawPoint = ({ x, y, color }) => {
-    const event = { button: 0, pageX: x, pageY: y };
+    const event = { button: 0, offsetX: x, offsetY: y };
     cfd.setDrawingColor(color);
     if (cfd.isBucketToolEnabled) {
       return cfd.mouseDown(event);
@@ -91,8 +91,8 @@ describe('CanvasFreeDrawing', () => {
   });
 
   it('should detect mouse leave the canvas drawing', () => {
-    const event1 = { button: 0, pageX: 100, pageY: 100 };
-    const event2 = { button: 0, pageX: 500, pageY: 100 };
+    const event1 = { button: 0, offsetX: 100, offsetY: 100 };
+    const event2 = { button: 0, offsetX: 500, offsetY: 100 };
     cfd.mouseDown(event1);
     cfd.mouseMove(event2);
     cfd.mouseLeave();
@@ -101,7 +101,7 @@ describe('CanvasFreeDrawing', () => {
     expect(cfd.leftCanvasDrawing).toBeTruthy();
   });
 
-  it('should detect the mouse enter the canvas', done => {
+  it('should detect the mouse enter the canvas', (done) => {
     cfd.on({ event: 'mouseenter' }, () => {
       done();
     });
@@ -113,7 +113,7 @@ describe('CanvasFreeDrawing', () => {
     expect(cfd.leftCanvasDrawing).toBeFalsy();
   });
 
-  it('should use floodfill', done => {
+  it('should use floodfill', (done) => {
     let countEvents = 0;
     cfd.on({ event: 'redraw' }, () => {
       countEvents += 1;
@@ -129,23 +129,23 @@ describe('CanvasFreeDrawing', () => {
       done();
     });
 
-    cfd.mouseDown({ button: 0, pageX: 100, pageY: 100 });
+    cfd.mouseDown({ button: 0, offsetX: 100, offsetY: 100 });
     const moveEvents = [
-      { button: 0, pageX: 300, pageY: 100 },
-      { button: 0, pageX: 300, pageY: 300 },
-      { button: 0, pageX: 100, pageY: 300 },
-      { button: 0, pageX: 100, pageY: 100 },
+      { button: 0, offsetX: 300, offsetY: 100 },
+      { button: 0, offsetX: 300, offsetY: 300 },
+      { button: 0, offsetX: 100, offsetY: 300 },
+      { button: 0, offsetX: 100, offsetY: 100 },
     ];
-    moveEvents.forEach(event => cfd.mouseMove(event));
+    moveEvents.forEach((event) => cfd.mouseMove(event));
 
     cfd.configBucketTool({ color: [255, 0, 255] });
     cfd.toggleBucketTool();
     expect(cfd.isBucketToolEnabled).toBe(true);
 
-    cfd.mouseDown({ button: 0, pageX: 150, pageY: 150 });
+    cfd.mouseDown({ button: 0, offsetX: 150, offsetY: 150 });
   });
 
-  it('should use floodfill with tolerance', done => {
+  it('should use floodfill with tolerance', (done) => {
     let countEvents = 0;
     cfd.on({ event: 'redraw' }, () => {
       countEvents += 1;
@@ -161,20 +161,20 @@ describe('CanvasFreeDrawing', () => {
       done();
     });
 
-    cfd.mouseDown({ button: 0, pageX: 100, pageY: 100 });
+    cfd.mouseDown({ button: 0, offsetX: 100, offsetY: 100 });
     const moveEvents = [
-      { button: 0, pageX: 300, pageY: 100 },
-      { button: 0, pageX: 300, pageY: 300 },
-      { button: 0, pageX: 100, pageY: 300 },
-      { button: 0, pageX: 100, pageY: 100 },
+      { button: 0, offsetX: 300, offsetY: 100 },
+      { button: 0, offsetX: 300, offsetY: 300 },
+      { button: 0, offsetX: 100, offsetY: 300 },
+      { button: 0, offsetX: 100, offsetY: 100 },
     ];
-    moveEvents.forEach(event => cfd.mouseMove(event));
+    moveEvents.forEach((event) => cfd.mouseMove(event));
 
     cfd.configBucketTool({ tolerance: 0, color: [255, 0, 255] });
     cfd.toggleBucketTool();
     expect(cfd.isBucketToolEnabled).toBe(true);
 
-    cfd.mouseDown({ button: 0, pageX: 150, pageY: 150 });
+    cfd.mouseDown({ button: 0, offsetX: 150, offsetY: 150 });
   });
 
   it('should draw a red point', () => {
@@ -211,8 +211,8 @@ describe('CanvasFreeDrawing', () => {
   });
 
   it('should draw a black line', () => {
-    const event1 = { button: 0, pageX: 10, pageY: 10 };
-    const event2 = { button: 0, pageX: 15, pageY: 15 };
+    const event1 = { button: 0, offsetX: 10, offsetY: 10 };
+    const event2 = { button: 0, offsetX: 15, offsetY: 15 };
     cfd.mouseDown(event1);
     cfd.mouseMove(event2);
     cfd.mouseUp();
@@ -265,7 +265,7 @@ describe('CanvasFreeDrawing', () => {
   });
 
   it('should not draw a red point because used left click', () => {
-    const event = { button: 1, pageX: 10, pageY: 10 };
+    const event = { button: 1, offsetX: 10, offsetY: 10 };
     cfd.setDrawingColor([255, 0, 0]);
     cfd.mouseDown(event);
     cfd.mouseUp();
@@ -275,9 +275,9 @@ describe('CanvasFreeDrawing', () => {
     expect(color).toEqual([255, 255, 255, 255]);
   });
 
-  it('should register and fire redraw event', done => {
+  it('should register and fire redraw event', (done) => {
     cfd.on({ event: 'redraw' }, () => done());
-    const event1 = { button: 0, pageX: 100, pageY: 100 };
+    const event1 = { button: 0, offsetX: 100, offsetY: 100 };
     cfd.mouseDown(event1);
   });
 
@@ -285,8 +285,8 @@ describe('CanvasFreeDrawing', () => {
     const countRedraws = jest.fn();
     cfd.on({ event: 'redraw', counter: 10 }, countRedraws);
 
-    cfd.mouseDown({ button: 0, pageX: 150, pageY: 150 });
-    cfd.mouseDown({ button: 0, pageX: 100, pageY: 100 });
+    cfd.mouseDown({ button: 0, offsetX: 150, offsetY: 150 });
+    cfd.mouseDown({ button: 0, offsetX: 100, offsetY: 100 });
 
     expect(countRedraws.mock.calls.length).toBe(2);
   });
@@ -294,29 +294,29 @@ describe('CanvasFreeDrawing', () => {
   it('should fire redraw event with debounce - only click', () => {
     const countRedraws = jest.fn();
     cfd.on({ event: 'redraw', counter: 3 }, countRedraws);
-    const clickEvent = { button: 0, pageX: 100, pageY: 100 };
+    const clickEvent = { button: 0, offsetX: 100, offsetY: 100 };
     const moveEvents = [
-      { button: 0, pageX: 100, pageY: 110 },
-      { button: 0, pageX: 100, pageY: 120 },
+      { button: 0, offsetX: 100, offsetY: 110 },
+      { button: 0, offsetX: 100, offsetY: 120 },
     ];
 
     cfd.mouseDown(clickEvent);
-    moveEvents.forEach(event => cfd.mouseMove(event));
+    moveEvents.forEach((event) => cfd.mouseMove(event));
     expect(countRedraws.mock.calls.length).toBe(1);
   });
 
   it('should fire redraw event with debounce - click and move', () => {
     const countRedraws = jest.fn();
     cfd.on({ event: 'redraw', counter: 3 }, countRedraws);
-    const clickEvent = { button: 0, pageX: 100, pageY: 100 };
+    const clickEvent = { button: 0, offsetX: 100, offsetY: 100 };
     const moveEvents = [
-      { button: 0, pageX: 100, pageY: 110 },
-      { button: 0, pageX: 100, pageY: 120 },
-      { button: 0, pageX: 100, pageY: 130 },
+      { button: 0, offsetX: 100, offsetY: 110 },
+      { button: 0, offsetX: 100, offsetY: 120 },
+      { button: 0, offsetX: 100, offsetY: 130 },
     ];
 
     cfd.mouseDown(clickEvent);
-    moveEvents.forEach(event => cfd.mouseMove(event));
+    moveEvents.forEach((event) => cfd.mouseMove(event));
     expect(countRedraws.mock.calls.length).toBe(2);
   });
 
@@ -368,7 +368,7 @@ describe('CanvasFreeDrawing', () => {
   });
 
   it('should save, clear and restore canvas', () => {
-    const event1 = { button: 0, pageX: 100, pageY: 100 };
+    const event1 = { button: 0, offsetX: 100, offsetY: 100 };
     cfd.mouseDown(event1);
     const colorAfterClick = getNodeColor(100, 100, cfd);
     expect(colorAfterClick).toEqual([0, 0, 0, 255]);
@@ -422,7 +422,7 @@ describe('CanvasFreeDrawing', () => {
     expect(console.warn).toHaveBeenCalledWith('There are no more redo left.');
   });
 
-  it('should fill with floodfill after clear and then redo', done => {
+  it('should fill with floodfill after clear and then redo', (done) => {
     let spySetBackground;
 
     cfd.on({ event: 'fill' }, () => {
@@ -431,14 +431,14 @@ describe('CanvasFreeDrawing', () => {
       done();
     });
 
-    cfd.mouseDown({ button: 0, pageX: 100, pageY: 100 });
+    cfd.mouseDown({ button: 0, offsetX: 100, offsetY: 100 });
     const moveEvents = [
-      { button: 0, pageX: 300, pageY: 100 },
-      { button: 0, pageX: 300, pageY: 300 },
-      { button: 0, pageX: 100, pageY: 300 },
-      { button: 0, pageX: 100, pageY: 100 },
+      { button: 0, offsetX: 300, offsetY: 100 },
+      { button: 0, offsetX: 300, offsetY: 300 },
+      { button: 0, offsetX: 100, offsetY: 300 },
+      { button: 0, offsetX: 100, offsetY: 100 },
     ];
-    moveEvents.forEach(event => cfd.mouseMove(event));
+    moveEvents.forEach((event) => cfd.mouseMove(event));
 
     cfd.clear();
     cfd.undo();
@@ -448,10 +448,10 @@ describe('CanvasFreeDrawing', () => {
     cfd.toggleBucketTool();
     expect(cfd.isBucketToolEnabled).toBe(true);
 
-    cfd.mouseDown({ button: 0, pageX: 150, pageY: 150 });
+    cfd.mouseDown({ button: 0, offsetX: 150, offsetY: 150 });
   });
 
-  it('should fill with set bg after clear', done => {
+  it('should fill with set bg after clear', (done) => {
     let spySetBackground;
 
     cfd.on({ event: 'fill' }, () => {
@@ -460,14 +460,14 @@ describe('CanvasFreeDrawing', () => {
       done();
     });
 
-    cfd.mouseDown({ button: 0, pageX: 100, pageY: 100 });
+    cfd.mouseDown({ button: 0, offsetX: 100, offsetY: 100 });
     const moveEvents = [
-      { button: 0, pageX: 300, pageY: 100 },
-      { button: 0, pageX: 300, pageY: 300 },
-      { button: 0, pageX: 100, pageY: 300 },
-      { button: 0, pageX: 100, pageY: 100 },
+      { button: 0, offsetX: 300, offsetY: 100 },
+      { button: 0, offsetX: 300, offsetY: 300 },
+      { button: 0, offsetX: 100, offsetY: 300 },
+      { button: 0, offsetX: 100, offsetY: 100 },
     ];
-    moveEvents.forEach(event => cfd.mouseMove(event));
+    moveEvents.forEach((event) => cfd.mouseMove(event));
 
     cfd.clear();
     spySetBackground = jest.spyOn(cfd, 'setBackground');
@@ -476,6 +476,6 @@ describe('CanvasFreeDrawing', () => {
     cfd.toggleBucketTool();
     expect(cfd.isBucketToolEnabled).toBe(true);
 
-    cfd.mouseDown({ button: 0, pageX: 150, pageY: 150 });
+    cfd.mouseDown({ button: 0, offsetX: 150, offsetY: 150 });
   });
 });
