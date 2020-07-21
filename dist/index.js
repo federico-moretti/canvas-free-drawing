@@ -146,14 +146,10 @@ var CanvasFreeDrawing = /** @class */ (function () {
     CanvasFreeDrawing.prototype.mouseDown = function (event) {
         if (event.button !== 0)
             return;
-        var x = event.pageX - this.canvas.offsetLeft;
-        var y = event.pageY - this.canvas.offsetTop;
-        this.drawPoint(x, y);
+        this.drawPoint(event.offsetX, event.offsetY);
     };
     CanvasFreeDrawing.prototype.mouseMove = function (event) {
-        var x = event.pageX - this.canvas.offsetLeft;
-        var y = event.pageY - this.canvas.offsetTop;
-        this.drawLine(x, y, event);
+        this.drawLine(event.offsetX, event.offsetY, event);
     };
     CanvasFreeDrawing.prototype.touchStart = function (event) {
         if (event.changedTouches.length > 0) {
