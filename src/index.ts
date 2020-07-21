@@ -464,7 +464,7 @@ export default class CanvasFreeDrawing {
   }
 
   toValidColor(color: Color): Color {
-    if (Array.isArray(color) && color.length === 4) color.pop();
+    if (Array.isArray(color) && color.length === 4) return color;
     if (Array.isArray(color) && color.length === 3) {
       const validColor = [...color];
       validColor.push(255);
