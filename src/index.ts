@@ -207,19 +207,21 @@ export default class CanvasFreeDrawing {
   }
 
   addListeners(): void {
-    this.listenersList.forEach(event => {
-      this.canvas.addEventListener(event.toLowerCase(), this.bindings[
-        event
-      ] as EventListenerObject);
+    this.listenersList.forEach((event) => {
+      this.canvas.addEventListener(
+        event.toLowerCase(),
+        this.bindings[event] as EventListenerObject
+      );
     });
     document.addEventListener('mouseup', this.bindings.mouseUpDocument);
   }
 
   removeListeners(): void {
-    this.listenersList.forEach(event => {
-      this.canvas.removeEventListener(event.toLowerCase(), this.bindings[
-        event
-      ] as EventListenerObject);
+    this.listenersList.forEach((event) => {
+      this.canvas.removeEventListener(
+        event.toLowerCase(),
+        this.bindings[event] as EventListenerObject
+      );
     });
     document.removeEventListener('mouseup', this.bindings.mouseUpDocument);
   }
@@ -346,7 +348,7 @@ export default class CanvasFreeDrawing {
     this.context.lineJoin = 'round';
     const positions = [[...this.positions].pop()];
 
-    positions.forEach(position => {
+    positions.forEach((position) => {
       if (position && position[0] && position[0].strokeColor) {
         this.context.strokeStyle = this.rgbaFromArray(position[0].strokeColor);
         this.context.lineWidth = position[0].lineWidth;

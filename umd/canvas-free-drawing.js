@@ -2,7 +2,9 @@
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
 	(global = global || self, factory(global.CanvasFreeDrawing = {}));
-}(this, function (exports) { 'use strict';
+}(this, (function (exports) { 'use strict';
+
+	var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
 	function unwrapExports (x) {
 		return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
@@ -13,7 +15,15 @@
 	}
 
 	var dist = createCommonjsModule(function (module, exports) {
+	var __spreadArrays = (commonjsGlobal && commonjsGlobal.__spreadArrays) || function () {
+	    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+	    for (var r = Array(s), k = 0, i = 0; i < il; i++)
+	        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+	            r[k] = a[j];
+	    return r;
+	};
 	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.AllowedEvents = void 0;
 	var AllowedEvents;
 	(function (AllowedEvents) {
 	    AllowedEvents["redraw"] = "redraw";
@@ -238,7 +248,7 @@
 	    CanvasFreeDrawing.prototype.handleDrawing = function (dispatchEventsOnceEvery) {
 	        var _this = this;
 	        this.context.lineJoin = 'round';
-	        var positions = [this.positions.slice().pop()];
+	        var positions = [__spreadArrays(this.positions).pop()];
 	        positions.forEach(function (position) {
 	            if (position && position[0] && position[0].strokeColor) {
 	                _this.context.strokeStyle = _this.rgbaFromArray(position[0].strokeColor);
@@ -319,9 +329,9 @@
 	    };
 	    CanvasFreeDrawing.prototype.toValidColor = function (color) {
 	        if (Array.isArray(color) && color.length === 4)
-	            color.pop();
+	            return color;
 	        if (Array.isArray(color) && color.length === 3) {
-	            var validColor = color.slice();
+	            var validColor = __spreadArrays(color);
 	            validColor.push(255);
 	            return validColor;
 	        }
@@ -522,4 +532,4 @@
 
 	Object.defineProperty(exports, '__esModule', { value: true });
 
-}));
+})));
