@@ -2,7 +2,7 @@
 
 Simple and straightforward package that allows you to free draw on a canvas html element.
 
-You can try it [here](https://federicomoretti.dev/canvas-free-drawing)!
+You can try it [here](https://codesandbox.io/s/canvas-free-drawing-9nry5b?file=/index.html)!
 
 ## Latest Update
 
