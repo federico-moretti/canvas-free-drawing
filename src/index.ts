@@ -260,8 +260,9 @@ export default class CanvasFreeDrawing {
   touchStart(event: TouchEvent): void {
     if (event.changedTouches.length > 0) {
       const { pageX, pageY, identifier } = event.changedTouches[0];
-      const x = pageX - this.canvas.offsetLeft;
-      const y = pageY - this.canvas.offsetTop;
+      const boundingClient = this.canvas.getBoundingClientRect();
+      const x = pageX - boundingClient.left;
+      const y = pageY - boundingClient.top;
       this.touchIdentifier = identifier;
       this.drawPoint(x, y);
     }
@@ -270,8 +271,9 @@ export default class CanvasFreeDrawing {
   touchMove(event: TouchEvent): void {
     if (event.changedTouches.length > 0) {
       const { pageX, pageY, identifier } = event.changedTouches[0];
-      const x = pageX - this.canvas.offsetLeft;
-      const y = pageY - this.canvas.offsetTop;
+      const boundingClient = this.canvas.getBoundingClientRect();
+      const x = pageX - boundingClient.left;
+      const y = pageY - boundingClient.top;
 
       // check if is multi touch, if it is do nothing
       if (identifier != this.touchIdentifier) return;

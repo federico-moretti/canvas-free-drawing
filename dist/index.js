@@ -154,8 +154,9 @@ var CanvasFreeDrawing = /** @class */ (function () {
     CanvasFreeDrawing.prototype.touchStart = function (event) {
         if (event.changedTouches.length > 0) {
             var _a = event.changedTouches[0], pageX = _a.pageX, pageY = _a.pageY, identifier = _a.identifier;
-            var x = pageX - this.canvas.offsetLeft;
-            var y = pageY - this.canvas.offsetTop;
+            var boundingClient = this.canvas.getBoundingClientRect();
+            var x = pageX - boundingClient.left;
+            var y = pageY - boundingClient.top;
             this.touchIdentifier = identifier;
             this.drawPoint(x, y);
         }
@@ -163,8 +164,9 @@ var CanvasFreeDrawing = /** @class */ (function () {
     CanvasFreeDrawing.prototype.touchMove = function (event) {
         if (event.changedTouches.length > 0) {
             var _a = event.changedTouches[0], pageX = _a.pageX, pageY = _a.pageY, identifier = _a.identifier;
-            var x = pageX - this.canvas.offsetLeft;
-            var y = pageY - this.canvas.offsetTop;
+            var boundingClient = this.canvas.getBoundingClientRect();
+            var x = pageX - boundingClient.left;
+            var y = pageY - boundingClient.top;
             // check if is multi touch, if it is do nothing
             if (identifier != this.touchIdentifier)
                 return;
